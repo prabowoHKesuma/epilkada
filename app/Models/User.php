@@ -22,8 +22,12 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
+        'organization_id',
+        'region_id',
+        'is_active',
     ];
 
     /**
@@ -52,4 +56,5 @@ class User extends Authenticatable
     public function organization() { return $this->belongsTo(Organization::class); }
     public function region() { return $this->belongsTo(Region::class); }
     public function elections() { return $this->hasMany(Election::class, 'created_by'); }
+
 }
