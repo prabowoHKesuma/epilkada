@@ -7,6 +7,7 @@ use App\Models\Election;
 use App\Models\Candidate;
 use App\Http\Requests\StoreCandidateRequest;
 use Illuminate\Support\Facades\Storage;
+use App\Services\AuditLogger;
 
 class CandidateController extends Controller
 {
@@ -48,6 +49,8 @@ class CandidateController extends Controller
             'is_active' => true,
         ]);
 
+        AuditLogger::log('candidate_create', "Kandidat ditambahkan: {$validated['name']}", ['election_id' => $election->id]);
+
         return redirect()->route('elections.show', $election)->with('status', 'Kandidat berhasil ditambahkan.');
     }
 
@@ -65,6 +68,7 @@ class CandidateController extends Controller
     public function edit(Election $election, Candidate $candidate)
     {
         abort_if($election->status !== 'draft', 403, 'Kandidat hanya bisa diedit selama pemilihan masih draft.');
+        AuditLogger::log('candidate_edit', "Kandidat diedit: {$candidate->name}", ['election_id' => $election->id]);
         return view('candidates.edit', compact('election', 'candidate'));
     }
 
@@ -82,7 +86,7 @@ class CandidateController extends Controller
         }
 
         $candidate->update($validated);
-
+        AuditLogger::log('candidate_update', "Data kandidat diperbarui: {$candidate->name}", ['election_id' => $election->id]);
         return redirect()->route('elections.show', $election)->with('status', 'Data kandidat diperbarui.');
     }
 
@@ -94,7 +98,7 @@ class CandidateController extends Controller
             Storage::disk('public')->delete($candidate->photo);
         }
         $candidate->delete();
-
+AuditLogger::log('candidate_delete', "Kandidat dihapus: {$candidate->name}", ['election_id' => $election->id]);
         return redirect()->route('elections.show', $election)->with('status', 'Kandidat dihapus.');
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Election;
 use App\Models\Voter;
 use App\Models\ElectionVoter;
+use App\Services\AuditLogger;
 
 class ElectionVoterController extends Controller
 {
@@ -32,6 +33,7 @@ class ElectionVoterController extends Controller
             );
         }
 
+        AuditLogger::log('election_voter_assign', "Pemilih didaftarkan ke pemilihan: {$election->title}", ['election_id' => $election->id]);
         return back()->with('status', count($validated['voter_ids']).' pemilih berhasil didaftarkan ke pemilihan ini.');
     }
 
@@ -41,6 +43,7 @@ class ElectionVoterController extends Controller
         abort_if($election->status !== 'draft', 403, 'Daftar pemilih hanya bisa diubah selama pemilihan masih draft.');
 
         $electionVoter->delete();
+        AuditLogger::log('election_voter_remove', "Pemilih dikeluarkan dari pemilihan: {$election->title}", ['election_id' => $election->id]);
         return back()->with('status', 'Pemilih dikeluarkan dari daftar pemilihan ini.');
     }
 }

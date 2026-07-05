@@ -10,6 +10,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use App\Services\AuditLogger;
 
 class UserController extends Controller
 {
@@ -61,7 +62,7 @@ class UserController extends Controller
         ]);
 
         $user->assignRole($validated['role']);
-
+        AuditLogger::log('user_create', "Akun petugas dibuat: {$user->username}");
         return redirect()->route('users.index')->with('status', 'Akun petugas berhasil dibuat.');
     }
 
@@ -102,7 +103,7 @@ class UserController extends Controller
 
         $user->save();
         $user->syncRoles([$validated['role']]);
-
+        AuditLogger::log('user_update', "Data petugas diperbarui: {$user->username}");
         return redirect()->route('users.index')->with('status', 'Data petugas berhasil diperbarui.');
     }
 
@@ -115,7 +116,7 @@ class UserController extends Controller
         // Cukup dinonaktifkan, supaya riwayat aktivitas user ini (misal token yang pernah diterbitkan) tetap tertelusuri.
         $user->is_active = false;
         $user->save();
-
+        AuditLogger::log('user_deactivate', "Akun dinonaktifkan: {$user->username}");
         return redirect()->route('users.index')->with('status', 'Akun petugas dinonaktifkan.');
     }
 
@@ -123,7 +124,7 @@ class UserController extends Controller
     {
         $user->is_active = true;
         $user->save();
-
+        AuditLogger::log('user_activate', "Akun diaktifkan kembali: {$user->username}");
         return redirect()->route('users.index')->with('status', 'Akun petugas diaktifkan kembali.');
     }
 }

@@ -8,6 +8,7 @@ use App\Models\Region;
 use App\Http\Requests\StoreVoterRequest;
 use App\Services\PiiHasher;
 use Illuminate\Validation\ValidationException;
+use App\Services\AuditLogger;
 
 class VoterController extends Controller
 {
@@ -54,7 +55,7 @@ class VoterController extends Controller
             'rw' => $validated['rw'] ?? null,
             'is_active' => true,
         ]);
-
+        AuditLogger::log('voter_create', "Pemilih didaftarkan: {$voter->name}", ['voter_id' => $voter->id]);
         return redirect()->route('voters.index')->with('status', "Pemilih {$voter->name} berhasil didaftarkan.");
     }
 
@@ -98,6 +99,7 @@ class VoterController extends Controller
             'rw' => $validated['rw'] ?? null,
         ]);
 
+        AuditLogger::log('voter_update', "Data pemilih diperbarui: {$voter->name}", ['voter_id' => $voter->id]);
         return redirect()->route('voters.index')->with('status', 'Data pemilih diperbarui.');
     }
 
@@ -108,6 +110,7 @@ class VoterController extends Controller
     {
         $voter->is_active = false;
         $voter->save();
+        AuditLogger::log('voter_deactivate', "Pemilih dinonaktifkan: {$voter->name}", ['voter_id' => $voter->id]);
 
         return redirect()->route('voters.index')->with('status', 'Pemilih dinonaktifkan.');
     }

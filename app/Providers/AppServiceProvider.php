@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Support\Facades\Event;
+use App\Services\AuditLogger;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +23,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Event::listen(Login::class, function (Login $event) {
+            AuditLogger::log('login_success', 'Login berhasil: '.$event->user->username);
+        });
+
+        Event::listen(Failed::class, function (Failed $event) {
+            $username = $event->credentials['username'] ?? '-';
+            AuditLogger::log('login_failed', "Percobaan login gagal untuk username: $username");
+        });
     }
 }

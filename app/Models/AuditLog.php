@@ -9,6 +9,9 @@ class AuditLog extends Model
     // app/Models/AuditLog.php
 protected $fillable = ['user_id', 'organization_id', 'region_id', 'election_id', 'action', 'description', 'ip_address', 'user_agent'];
 public $timestamps = false; // hanya created_at
+protected $casts = [
+    'created_at' => 'datetime',
+];
 
 public function user() { return $this->belongsTo(User::class); }
 public function organization() { return $this->belongsTo(Organization::class); }

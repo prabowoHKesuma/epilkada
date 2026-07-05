@@ -9,6 +9,7 @@ use App\Models\Ballot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Services\AuditLogger;
 
 class VotingController extends Controller
 {
@@ -83,6 +84,8 @@ class VotingController extends Controller
             $electionVoter->voted_at = now();
             $electionVoter->save();
         });
+
+        AuditLogger::log('cast_vote', 'Satu suara TPS tercatat.', ['election_id' => $boothToken->election_id]);
 
         session()->forget('voting_token_id');
         return redirect()->route('voting.thankyou');

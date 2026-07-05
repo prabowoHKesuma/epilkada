@@ -7,6 +7,7 @@ use App\Models\ElectionVoter;
 use App\Models\TpsBoothToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Services\AuditLogger;
 
 class TpsBoothTokenController extends Controller
 {
@@ -47,6 +48,12 @@ class TpsBoothTokenController extends Controller
             'expires_at' => now()->addMinutes(10),
             'created_by' => auth()->id(),
         ]);
+
+        AuditLogger::log(
+            'issue_tps_token',
+            "Token diterbitkan untuk pemilih {$electionVoter->voter->name} ({$electionVoter->voter->voter_code})",
+            ['election_id' => $election->id]
+        );
 
         return back()->with([
             'status' => 'Token berhasil diterbitkan.',

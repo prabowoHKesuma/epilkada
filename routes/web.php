@@ -10,6 +10,8 @@ use App\Http\Controllers\VoterImportController;
 use App\Http\Controllers\ElectionVoterController;
 use App\Http\Controllers\TpsBoothTokenController;
 use App\Http\Controllers\VotingController;
+use App\Http\Controllers\ResultController;
+use App\Http\Controllers\AuditLogController;
 
 Route::get('/', function () {
     return view('auth.login');
@@ -54,7 +56,7 @@ Route::middleware(['auth', 'permission:manage_voter'])->group(function () {
     Route::delete('/elections/{election}/voters/{electionVoter}', [ElectionVoterController::class, 'destroy'])->name('election-voters.destroy');
 });
 
-Route::middleware(['auth', 'permission:issue_tps_token'])->group(function () {
+Route::middleware(['auth', 'permission:issue_tps_token','throttle:30,1'])->group(function () {
     Route::get('/elections/{election}/tps-tokens', [TpsBoothTokenController::class, 'index'])->name('tps-tokens.index');
     Route::post('/elections/{election}/tps-tokens', [TpsBoothTokenController::class, 'store'])->name('tps-tokens.store');
 });
@@ -65,6 +67,14 @@ Route::middleware(['throttle:10,1'])->group(function () {
     Route::get('/vote/booth', [VotingController::class, 'showBooth'])->name('voting.booth');
     Route::post('/vote/submit', [VotingController::class, 'submitVote'])->name('voting.submit');
     Route::get('/vote/selesai', [VotingController::class, 'thankyou'])->name('voting.thankyou');
+});
+
+Route::middleware(['auth', 'permission:view_result'])->group(function () {
+    Route::get('/elections/{election}/results', [ResultController::class, 'show'])->name('results.show');
+});
+
+Route::middleware(['auth', 'permission:view_audit_log'])->group(function () {
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 });
 
 require __DIR__.'/auth.php';

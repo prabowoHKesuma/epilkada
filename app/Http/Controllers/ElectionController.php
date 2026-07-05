@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Election;
 use App\Http\Requests\StoreElectionRequest;
 use App\Http\Requests\UpdateElectionRequest;
+use App\Services\AuditLogger;
 
 class ElectionController extends Controller
 {
@@ -87,6 +88,7 @@ class ElectionController extends Controller
         }
 
         $election->update(['status' => 'open']);
+        AuditLogger::log('election_publish', "Pemilihan '{$election->title}' dibuka.", ['election_id' => $election->id]);
         return back()->with('status', 'Pemilihan dibuka. Pemungutan suara sudah bisa dimulai.');
     }
 
@@ -97,6 +99,7 @@ class ElectionController extends Controller
         }
 
         $election->update(['status' => 'closed']);
+        AuditLogger::log('election_close', "Pemilihan '{$election->title}' ditutup.", ['election_id' => $election->id]);
         return back()->with('status', 'Pemungutan suara ditutup.');
     }
 
@@ -107,6 +110,7 @@ class ElectionController extends Controller
         }
 
         $election->update(['status' => 'finished']);
+        AuditLogger::log('election_finish', "Pemilihan '{$election->title}' difinalisasi.", ['election_id' => $election->id]);
         return back()->with('status', 'Pemilihan diselesaikan. Hasil sudah final.');
     }
 
