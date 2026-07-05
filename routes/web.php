@@ -5,9 +5,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ElectionController;
 use App\Http\Controllers\CandidateController;
+use App\Http\Controllers\VoterController;
+use App\Http\Controllers\VoterImportController;
+use App\Http\Controllers\ElectionVoterController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('auth.login');
 });
 
 Route::get('/dashboard', function () {
@@ -38,6 +41,15 @@ Route::middleware(['auth', 'permission:manage_candidate'])->group(function () {
     Route::get('/elections/{election}/candidates/{candidate}/edit', [CandidateController::class, 'edit'])->name('candidates.edit');
     Route::put('/elections/{election}/candidates/{candidate}', [CandidateController::class, 'update'])->name('candidates.update');
     Route::delete('/elections/{election}/candidates/{candidate}', [CandidateController::class, 'destroy'])->name('candidates.destroy');
+});
+
+Route::middleware(['auth', 'permission:manage_voter'])->group(function () {
+    Route::resource('voters', VoterController::class)->except(['show']);
+    Route::get('/voters/import', [VoterImportController::class, 'form'])->name('voters.import.form');
+    Route::post('/voters/import', [VoterImportController::class, 'process'])->name('voters.import.process');
+    Route::get('/elections/{election}/voters', [ElectionVoterController::class, 'index'])->name('election-voters.index');
+    Route::post('/elections/{election}/voters', [ElectionVoterController::class, 'store'])->name('election-voters.store');
+    Route::delete('/elections/{election}/voters/{electionVoter}', [ElectionVoterController::class, 'destroy'])->name('election-voters.destroy');
 });
 
 require __DIR__.'/auth.php';

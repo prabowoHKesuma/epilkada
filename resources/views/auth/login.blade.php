@@ -1,47 +1,87 @@
-<x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selamat Datang di e-PILKADA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
+        }
+        .login-container {
+            min-height: 100vh;
+        }
+        .brand-title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1e293b;
+            letter-spacing: -1px;
+        }
+        .card-login {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            max-width: 420px;
+            width: 100%;
+        }
+        .btn-primary-custom {
+            background-color: #0d6efd;
+            border: none;
+            padding: 10px;
+            font-weight: 600;
+        }
+        .btn-primary-custom:hover {
+            background-color: #0b5ed7;
+        }
+    </style>
+</head>
+<body>
 
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
-
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="username" :value="__('Username')" />
-            <x-text-input id="username" class="block mt-1 w-full" type="text" name="username" :value="old('username')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('username')" class="mt-2" />
+<div class="container-fluid">
+    <div class="row login-container align-items-center">
+        
+        <div class="col-md-6 d-flex flex-column align-items-center justify-content-center text-center p-5">
+            <img src="{{ asset('/images/logo.png') }}" alt="Mascot e-PILKADA" class="img-fluid mb-4" style="max-height: 600px; object-fit: contain;">
         </div>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+        <div class="col-md-6 d-flex flex-column align-items-center justify-content-center p-5 bg-white h-100">
+            
+            <div class="text-center mb-4">
+                <h5 class="text-primary fw-semibold mb-1">Selamat Datang di e-PILKADA</h5>
+                <small class="text-muted">Aplikasi PILKADA Online</small>
+            </div>
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
+            <div class="card card-login p-4">
+                <h5 class="fw-bold mb-4 text-dark">Login Panitia</h5>
+                
+                <form action="{{ route('login') }}" method="POST">
+                    @csrf <div class="mb-3">
+                        <label for="username" class="form-label text-muted small fw-bold">Username</label>
+                        <input type="text" class="form-control bg-light py-2" id="username" name="username" placeholder="admin" required>
+                    </div>
 
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                    <div class="mb-4">
+                        <label for="password" class="form-label text-muted small fw-bold">Password</label>
+                        <input type="password" class="form-control bg-light py-2" id="password" name="password" placeholder="••••••••" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-custom w-100 text-white rounded-3">Masuk</button>
+                </form>
+            </div>
+
+            <div class="mt-5 text-center">
+                <small class="text-muted">&copy; 2026 JUMPQ Innovations, PT. Khalifa Andara Solusindo Group</small>
+            </div>
+
         </div>
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
-                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
-            </label>
-        </div>
+    </div>
+</div>
 
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
-
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
-    </form>
-</x-guest-layout>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

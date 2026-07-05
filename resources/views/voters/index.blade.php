@@ -5,7 +5,7 @@
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0">Daftar Petugas</h1>
+                <h1 class="m-0">Daftar Pemilih</h1>
             </div>
         </div>
     </div>
@@ -14,7 +14,6 @@
 <div class="content">
     <div class="container-fluid">
         
-        {{-- Flash Message Status --}}
         @if (session('status'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="icon fas fa-check"></i> {{ session('status') }}
@@ -26,10 +25,13 @@
 
         <div class="card card-outline card-primary">
             <div class="card-header">
-                <h3 class="card-title">Manajemen Akun Petugas / Panitia</h3>
+                <h3 class="card-title">Data Master Pemilih (Voters)</h3>
                 <div class="card-tools">
-                    <a href="{{ route('users.create') }}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-user-plus"></i> Tambah Petugas
+                    <a href="{{ route('voters.create') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> Tambah Pemilih
+                    </a>
+                    <a href="{{ route('voters.import.form') }}" class="btn btn-sm btn-success ml-1">
+                        <i class="fas fa-file-import"></i> Import CSV
                     </a>
                 </div>
             </div>
@@ -38,51 +40,36 @@
                 <table class="table table-hover text-nowrap table-striped">
                     <thead>
                         <tr>
-                            <th>Nama</th>
-                            <th>Username</th>
-                            <th>Role</th>
+                            <th>Kode Pemilih</th>
+                            <th>Nama Lengkap</th>
                             <th>Wilayah</th>
                             <th>Status</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($users as $user)
+                        @forelse ($voters as $voter)
                             <tr>
-                                <td class="font-weight-bold text-dark">{{ $user->name }}</td>
-                                <td><code>{{ $user->username }}</code></td>
+                                <td><code>{{ $voter->voter_code }}</code></td>
+                                <td>{{ $voter->name }}</td>
+                                <td>{{ $voter->region->name ?? '-' }}</td>
                                 <td>
-                                    <span class="badge badge-info shadow-sm">
-                                        {{ $user->roles->pluck('name')->join(', ') }}
-                                    </span>
-                                </td>
-                                <td>{{ $user->region->name ?? '-' }}</td>
-                                <td>
-                                    @if($user->is_active)
+                                    @if($voter->is_active)
                                         <span class="badge badge-success">Aktif</span>
                                     @else
                                         <span class="badge badge-danger">Nonaktif</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('users.edit', $user) }}" class="btn btn-xs btn-info">
+                                    <a href="{{ route('voters.edit', $voter) }}" class="btn btn-xs btn-info">
                                         <i class="fas fa-edit"></i> Edit
                                     </a>
-
-                                    @if($user->is_active)
-                                        <form action="{{ route('users.destroy', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Nonaktifkan petugas ini?')">
+                                    @if($voter->is_active)
+                                        <form action="{{ route('voters.destroy', $voter) }}" method="POST" class="d-inline" onsubmit="return confirm('Nonaktifkan pemilih ini?')">
                                             @csrf 
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-xs btn-danger ml-1">
-                                                <i class="fas fa-user-slash"></i> Nonaktifkan
-                                            </button>
-                                        </form>
-                                    @else
-                                        <form action="{{ route('users.activate', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Aktifkan kembali petugas ini?')">
-                                            @csrf 
-                                            @method('PATCH')
-                                            <button type="submit" class="btn btn-xs btn-success ml-1">
-                                                <i class="fas fa-user-check"></i> Aktifkan
+                                                <i class="fas fa-ban"></i> Nonaktifkan
                                             </button>
                                         </form>
                                     @endif
@@ -90,7 +77,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-3">Belum ada data petugas yang terdaftar.</td>
+                                <td colspan="5" class="text-center text-muted py-3">Belum ada data pemilih.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -99,7 +86,7 @@
 
             <div class="card-footer clearfix">
                 <div class="float-right">
-                    {{ $users->links() }}
+                    {{ $voters->links() }}
                 </div>
             </div>
         </div>

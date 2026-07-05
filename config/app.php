@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'pii_hash_key' => env('PII_HASH_KEY'),
+
 ];
