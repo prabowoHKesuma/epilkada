@@ -7,14 +7,6 @@ use Illuminate\Support\Facades\Auth;
 
 class MenuService
 {
-    /**
-     * Create a new class instance.
-     */
-    public function __construct()
-    {
-        //
-    }
-
     public function getMenuForCurrentUser()
     {
         if (! Auth::check()) {

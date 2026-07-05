@@ -15,7 +15,7 @@
             <tbody>
                 @foreach ($logs as $log)
                     <tr class="border-t">
-                        <td class="p-2">{{ $log->created_at->format('d M Y H:i:s') }}</td>
+                        <td class="p-2">{{ $log->created_at->format('d M Y H:i:s')?? '-' }}</td>
                         <td class="p-2">{{ $log->user->username ?? 'Anonim/Sistem' }}</td>
                         <td class="p-2"><code>{{ $log->action }}</code></td>
                         <td class="p-2">{{ $log->description }}</td>

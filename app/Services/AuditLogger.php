@@ -16,6 +16,7 @@ class AuditLogger
             'description' => $description,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
+            'created_at' => now(),
         ]);
     }
 }

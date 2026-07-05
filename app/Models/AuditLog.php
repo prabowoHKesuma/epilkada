@@ -7,7 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class AuditLog extends Model
 {
     // app/Models/AuditLog.php
-protected $fillable = ['user_id', 'organization_id', 'region_id', 'election_id', 'action', 'description', 'ip_address', 'user_agent'];
+protected $fillable = [
+    'user_id', 'organization_id', 'region_id', 'election_id',
+    'action', 'description', 'ip_address', 'user_agent', 'created_at',
+];
 public $timestamps = false; // hanya created_at
 protected $casts = [
     'created_at' => 'datetime',

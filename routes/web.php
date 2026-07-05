@@ -12,6 +12,7 @@ use App\Http\Controllers\TpsBoothTokenController;
 use App\Http\Controllers\VotingController;
 use App\Http\Controllers\ResultController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\MenuController;
 
 Route::get('/', function () {
     return view('auth.login');
@@ -75,6 +76,10 @@ Route::middleware(['auth', 'permission:view_result'])->group(function () {
 
 Route::middleware(['auth', 'permission:view_audit_log'])->group(function () {
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+});
+
+Route::middleware(['auth', 'permission:manage_menu'])->group(function () {
+    Route::resource('menus', MenuController::class)->except(['show']);
 });
 
 require __DIR__.'/auth.php';
