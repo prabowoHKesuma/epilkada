@@ -82,4 +82,9 @@ Route::middleware(['auth', 'permission:manage_menu'])->group(function () {
     Route::resource('menus', MenuController::class)->except(['show']);
 });
 
+Route::middleware(['prevent-back-history'])->group(function () {
+    Route::get('/voting', [VotingController::class, 'index'])->name('voting.index');
+    Route::post('/voting/submit', [VotingController::class, 'submit'])->name('voting.submit');
+});
+
 require __DIR__.'/auth.php';

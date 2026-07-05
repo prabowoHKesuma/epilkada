@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Scopes\RegionScope;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Election extends Model
 {
@@ -33,4 +34,8 @@ protected static function booted(): void
 {
     static::addGlobalScope(new RegionScope);
 }
+public function eligibleVoters(): HasMany
+    {
+        return $this->hasMany(ElectionVoter::class, 'election_id');
+    }
 }

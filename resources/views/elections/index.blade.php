@@ -1,48 +1,114 @@
-<x-app-layout>
-    <div class="p-6">
-        <h1 class="text-xl font-bold mb-4">Daftar Pemilihan</h1>
+@extends('layouts.admin')
 
-        @if (session('status'))
-            <div class="mb-4 p-3 bg-green-100 text-green-800 rounded">{{ session('status') }}</div>
-        @endif
-        @if ($errors->any())
-            <div class="mb-4 p-3 bg-red-100 text-red-800 rounded">{{ $errors->first() }}</div>
-        @endif
-
-        <a href="{{ route('elections.create') }}" class="inline-block mb-4 px-4 py-2 bg-indigo-600 text-white rounded">+ Buat Pemilihan</a>
-
-        <table class="w-full border">
-            <thead>
-                <tr class="bg-gray-100">
-                    <th class="p-2 text-left">Judul</th>
-                    <th class="p-2 text-left">Status</th>
-                    <th class="p-2 text-left">Jumlah Kandidat</th>
-                    <th class="p-2 text-left">Periode</th>
-                    <th class="p-2 text-left">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($elections as $election)
-                    <tr class="border-t">
-                        <td class="p-2">{{ $election->title }}</td>
-                        <td class="p-2 uppercase text-xs font-semibold">{{ $election->status }}</td>
-                        <td class="p-2">{{ $election->candidates_count }}</td>
-                        <td class="p-2">{{ $election->start_at->format('d M Y') }} - {{ $election->end_at->format('d M Y') }}</td>
-                        <td class="p-2 space-x-2">
-                            <a href="{{ route('elections.show', $election) }}" class="text-indigo-600">Detail</a>
-                            @if($election->status === 'draft')
-                                <a href="{{ route('elections.edit', $election) }}" class="text-blue-600">Edit</a>
-                                <form action="{{ route('elections.destroy', $election) }}" method="POST" class="inline" onsubmit="return confirm('Hapus pemilihan ini? Tindakan tidak bisa dibatalkan.')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="text-red-600">Hapus</button>
-                                </form>
-                            @endif
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-
-        <div class="mt-4">{{ $elections->links() }}</div>
+@section('content')
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Daftar Pemilihan</h1>
+            </div>
+        </div>
     </div>
-</x-app-layout>
+</div>
+
+<div class="content">
+    <div class="container-fluid">
+        
+        @if (session('status'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="icon fas fa-check"></i> {{ session('status') }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="icon fas fa-ban"></i> {{ $errors->first() }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        @endif
+
+        <div class="card card-outline card-primary">
+            <div class="card-header">
+                <h3 class="card-title">Daftar Agenda Pemilihan (Elections)</h3>
+                <div class="card-tools">
+                    <a href="{{ route('elections.create') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> Buat Pemilihan
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover text-nowrap table-striped">
+                    <thead>
+                        <tr>
+                            <th>Judul Pemilihan</th>
+                            <th>Status</th>
+                            <th>Jumlah Kandidat</th>
+                            <th>Periode</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($elections as $election)
+                            <tr>
+                                <td><strong>{{ $election->title }}</strong></td>
+                                <td>
+                                    @if($election->status === 'draft')
+                                        <span class="badge badge-secondary px-2 py-1">DRAFT</span>
+                                    @elseif($election->status === 'open')
+                                        <span class="badge badge-success px-2 py-1">OPEN / BERJALAN</span>
+                                    @elseif($election->status === 'closed')
+                                        <span class="badge badge-warning px-2 py-1">CLOSED / DITUTUP</span>
+                                    @else
+                                        <span class="badge badge-dark px-2 py-1">FINISHED / SELESAI</span>
+                                    @endif
+                                </td>
+                                <td><span class="badge badge-info">{{ $election->candidates_count }} Kandidat</span></td>
+                                <td>
+                                    <small class="text-muted">
+                                        <i class="far fa-calendar-alt"></i> {{ $election->start_at->format('d M Y') }} - {{ $election->end_at->format('d M Y') }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <a href="{{ route('elections.show', $election) }}" class="btn btn-xs btn-primary">
+                                        <i class="fas fa-eye"></i> Detail
+                                    </a>
+                                    
+                                    @if($election->status === 'draft')
+                                        <a href="{{ route('elections.edit', $election) }}" class="btn btn-xs btn-info ml-1">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <form action="{{ route('elections.destroy', $election) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus pemilihan ini? Tindakan tidak bisa dibatalkan.')">
+                                            @csrf 
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-xs btn-danger ml-1">
+                                                <i class="fas fa-trash"></i> Hapus
+                                            </button>
+                                        </form>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">Belum ada agenda pemilihan yang dibuat.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-footer clearfix">
+                <div class="float-right">
+                    {{ $elections->links() }}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+@endsection

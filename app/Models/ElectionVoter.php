@@ -10,4 +10,8 @@ class ElectionVoter extends Model
     public function election() { return $this->belongsTo(Election::class); }
 public function voter() { return $this->belongsTo(Voter::class); }
 public function tpsBoothToken() { return $this->hasOne(TpsBoothToken::class); }
+public function latestToken()
+{
+    return $this->hasOne(TpsBoothToken::class)->latestOfMany();
+}
 }

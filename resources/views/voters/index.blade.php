@@ -42,6 +42,7 @@
                         <tr>
                             <th>Kode Pemilih</th>
                             <th>Nama Lengkap</th>
+                            <th>Alamat</th>
                             <th>Wilayah</th>
                             <th>Status</th>
                             <th>Aksi</th>
@@ -52,6 +53,7 @@
                             <tr>
                                 <td><code>{{ $voter->voter_code }}</code></td>
                                 <td>{{ $voter->name }}</td>
+                                <td>{{ $voter->address ?? '-' }}</td>
                                 <td>{{ $voter->region->name ?? '-' }}</td>
                                 <td>
                                     @if($voter->is_active)
