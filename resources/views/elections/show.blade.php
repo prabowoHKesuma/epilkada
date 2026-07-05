@@ -54,5 +54,11 @@
                 </div>
             @endforeach
         </div>
+
+        <div class="mb-4 space-x-2">
+            <a href="{{ route('candidates.create', $election) }}" class="px-3 py-2 bg-gray-700 text-white rounded text-sm inline-block">Kelola Kandidat</a>
+            <a href="{{ route('election-voters.index', $election) }}" class="px-3 py-2 bg-gray-700 text-white rounded text-sm inline-block">Kelola Pemilih</a>
+            <a href="{{ route('tps-tokens.index', $election) }}" class="px-3 py-2 bg-gray-700 text-white rounded text-sm inline-block">Token TPS</a>
+        </div>
     </div>
 </x-app-layout>

@@ -20,7 +20,12 @@
     </ul>
     <ul class="navbar-nav ml-auto">
       <li class="nav-item">
-        <a class="nav-link text-danger" href="#" role="button"><i class="fas fa-sign-out-alt"></i> Keluar</a>
+        <a class="nav-link text-danger" href="{{ route('logout') }}" role="button" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+          <i class="fas fa-sign-out-alt"></i> Keluar
+        </a>
+        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+          @csrf
+        </form>
       </li>
     </ul>
   </nav>
