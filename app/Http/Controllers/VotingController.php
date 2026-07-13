@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Services\AuditLogger;
+use App\Models\VotingToken;
 
 class VotingController extends Controller
 {
@@ -117,4 +118,104 @@ class VotingController extends Controller
         $token = TpsBoothToken::find($tokenId);
         return $this->tokenIsValid($token) ? $token : null;
     }
+
+    public function showTokenFormRemote()
+    {
+        return view('voting.token-form-remote');
+    }
+
+    public function verifyTokenRemote(Request $request)
+    {
+        $request->validate(['token' => ['required', 'string']]);
+
+        $tokenHash = hash('sha256', strtoupper(trim($request->token)));
+        $votingToken = VotingToken::where('token_hash', $tokenHash)->first();
+
+        if (! $this->tokenIsValidRemote($votingToken)) {
+            return back()->withErrors(['token' => 'Token tidak valid, sudah dipakai, atau kedaluwarsa.']);
+        }
+
+        session(['remote_voting_token_id' => $votingToken->id]);
+        return redirect()->route('voting.booth.remote');
+    }
+
+    private function tokenIsValidRemote(?VotingToken $token): bool
+    {
+        if (! $token) return false;
+        if ($token->used_at) return false;
+        if ($token->revoked_at) return false;
+        if ($token->expires_at->isPast()) return false;
+        if ($token->election->status !== 'open') return false;
+
+        return true;
+    }
+
+    private function getSessionTokenRemote(): ?VotingToken
+    {
+        $tokenId = session('remote_voting_token_id');
+        if (! $tokenId) return null;
+
+        $token = VotingToken::find($tokenId);
+        return $this->tokenIsValidRemote($token) ? $token : null;
+    }
+
+    public function showBoothRemote()
+    {
+        $votingToken = $this->getSessionTokenRemote();
+        if (! $votingToken) {
+            return redirect()->route('voting.token-form.remote')->withErrors(['token' => 'Sesi tidak valid, masukkan token lagi.']);
+        }
+
+        $election = $votingToken->election()->with(['candidates' => function ($q) {
+            $q->where('is_active', true)->orderBy('number_order');
+        }])->first();
+
+        return view('voting.booth-remote', compact('election'));
+    }
+
+    public function submitVoteRemote(Request $request)
+    {
+        $request->validate(['candidate_id' => ['required', 'exists:candidates,id']]);
+
+        $votingToken = $this->getSessionTokenRemote();
+        if (! $votingToken) {
+            return redirect()->route('voting.token-form.remote')->withErrors(['token' => 'Sesi tidak valid, masukkan token lagi.']);
+        }
+
+        DB::transaction(function () use ($votingToken, $request) {
+            $lockedToken = VotingToken::where('id', $votingToken->id)->lockForUpdate()->first();
+
+            if (! $this->tokenIsValidRemote($lockedToken)) {
+                abort(422, 'Token sudah tidak berlaku, kemungkinan sudah dipakai di request lain.');
+            }
+
+            $candidate = Candidate::where('id', $request->candidate_id)
+                ->where('election_id', $lockedToken->election_id)
+                ->firstOrFail();
+
+            Ballot::create([
+                'election_id' => $lockedToken->election_id,
+                'candidate_id' => $candidate->id,
+                'ballot_code' => Str::random(32),
+                'vote_channel' => 'remote',
+            ]);
+
+            $lockedToken->used_at = now();
+            $lockedToken->save();
+
+            $electionVoter = ElectionVoter::where('election_id', $lockedToken->election_id)
+                ->where('voter_id', $lockedToken->voter_id)
+                ->lockForUpdate()
+                ->first();
+            $electionVoter->has_voted = true;
+            $electionVoter->voted_at = now();
+            $electionVoter->save();
+        });
+
+        AuditLogger::log('cast_vote', 'Satu suara Remote tercatat.', ['election_id' => $votingToken->election_id]);
+
+        session()->forget('remote_voting_token_id');
+        return redirect()->route('voting.thankyou');
+    }
+
 }

@@ -61,4 +61,11 @@ class TpsBoothTokenController extends Controller
             'voter_name' => $electionVoter->voter->name,
         ]);
     }
+
+    public function electionList()
+    {
+        $elections = Election::where('status', 'open')->get();
+        return view('tps-tokens.election-list', compact('elections'));
+    }
+    
 }

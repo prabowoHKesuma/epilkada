@@ -34,11 +34,15 @@ new class extends Component
 
     public function render()
     {
-        // Eager loading relasi token agar tidak N+1 query
         $eligibleVoters = $this->election->eligibleVoters()
-            ->with('latestToken') 
+            ->where('has_voted', false)
+            ->whereIn('allowed_channel', ['tps', 'both'])
+            ->whereDoesntHave('tpsBoothToken', function ($q) {
+                $q->whereNull('used_at')->whereNull('revoked_at')->where('expires_at', '>', now());
+            })
+            ->with('latestToken')
             ->whereHas('voter', function ($query) {
-                $query->where('name', 'like', '%' . $this->search . '%');
+                $query->where('name', 'like', '%'.$this->search.'%');
             })
             ->paginate(10);
 

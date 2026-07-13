@@ -24,12 +24,13 @@ class ElectionVoterController extends Controller
         $validated = $request->validate([
             'voter_ids' => ['required', 'array'],
             'voter_ids.*' => ['exists:voters,id'],
+            'allowed_channel' => ['required', 'in:tps,remote,both'],
         ]);
 
         foreach ($validated['voter_ids'] as $voterId) {
             ElectionVoter::firstOrCreate(
                 ['election_id' => $election->id, 'voter_id' => $voterId],
-                ['allowed_channel' => 'tps', 'has_voted' => false]
+                ['allowed_channel' => $validated['allowed_channel'], 'has_voted' => false]
             );
         }
 
@@ -46,4 +47,19 @@ class ElectionVoterController extends Controller
         AuditLogger::log('election_voter_remove', "Pemilih dikeluarkan dari pemilihan: {$election->title}", ['election_id' => $election->id]);
         return back()->with('status', 'Pemilih dikeluarkan dari daftar pemilihan ini.');
     }
+
+    public function changeChannel(Request $request, Election $election, ElectionVoter $electionVoter)
+    {
+        $request->validate(['allowed_channel' => ['required', 'in:tps,remote,both']]);
+
+        abort_if($electionVoter->has_voted, 403, 'Pemilih yang sudah memilih tidak bisa diubah jalurnya.');
+        abort_if($election->status !== 'draft', 403, 'Jalur pemilih hanya bisa diubah selama pemilihan masih draft.');
+
+        $electionVoter->allowed_channel = $request->allowed_channel;
+        $electionVoter->save();
+
+        return back()->with('status', 'Jalur pemilih diperbarui.');
+    }
+
+    
 }
