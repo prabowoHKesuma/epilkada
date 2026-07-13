@@ -1,13 +1,44 @@
-<x-guest-layout>
-    <div class="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
-        <h1 class="text-xl font-bold mb-4 text-center">Cek Status Verifikasi</h1>
+@extends('layouts.admin')
 
-        <x-input-error :messages="$errors->get('verification_code')" class="mb-3" />
+@section('content')
 
-        <form action="{{ route('remote.status.check') }}" method="POST">
-            @csrf
-            <input type="text" name="verification_code" maxlength="8" class="w-full text-center text-xl font-mono tracking-widest border rounded p-3 mb-4" placeholder="KODE" required>
-            <button class="w-full py-3 bg-indigo-600 text-white rounded font-semibold">Cek Status</button>
-        </form>
+<div class="login-box">
+    <div class="login-logo">
+        <a href="#"><b>Status</b>Verifikasi</a>
     </div>
-</x-guest-layout>
+
+    <div class="card card-outline card-primary">
+        <div class="card-header text-center">
+            <span class="h5 font-weight-bold">Pantau Pengajuan Anda</span>
+        </div>
+        <div class="card-body">
+            <p class="login-box-msg text-muted">Masukkan kode verifikasi 8 digit yang Anda terima saat pengajuan.</p>
+
+            @if($errors->has('verification_code'))
+                <div class="alert alert-danger alert-dismissible text-sm">
+                    <i class="icon fas fa-ban mr-1"></i> {{ $errors->first('verification_code') }}
+                </div>
+            @endif
+
+            <form action="{{ route('remote.status.check') }}" method="POST">
+                @csrf
+                <div class="input-group mb-3">
+                    <input type="text" 
+                           name="verification_code" 
+                           maxlength="8" 
+                           class="form-control form-control-lg text-center font-monospace" 
+                           style="letter-spacing: 4px; text-transform: uppercase; font-weight: bold;" 
+                           placeholder="XXXXXXXX" 
+                           required autofocus autocomplete="off">
+                    <div class="input-group-append">
+                        <div class="input-group-text"><span class="fas fa-search"></span></div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block btn-lg">
+                    <i class="fas fa-check-circle mr-2"></i> Cek Status Sekarang
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection

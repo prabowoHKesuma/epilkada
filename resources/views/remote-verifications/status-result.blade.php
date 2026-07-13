@@ -1,20 +1,71 @@
-<x-guest-layout>
-    <div class="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
-        <h1 class="text-xl font-bold mb-4 text-center">Status Verifikasi</h1>
+@extends('layouts.admin')
 
-        @if($rv->status === 'pending')
-            <p class="text-center text-yellow-700 bg-yellow-50 p-3 rounded">Masih menunggu verifikasi petugas. Silakan cek lagi beberapa saat lagi.</p>
-        @elseif($rv->status === 'rejected')
-            <p class="text-center text-red-700 bg-red-50 p-3 rounded">Pengajuan Anda ditolak.<br>Alasan: {{ $rv->reject_reason }}</p>
-        @elseif($rv->status === 'approved')
-            @if($token)
-                <p class="text-center text-green-700 bg-green-50 p-3 rounded mb-3">Verifikasi disetujui! Ini token voting Anda:</p>
-                <p class="text-3xl font-mono font-bold tracking-widest text-center mb-3">{{ $token }}</p>
-                <p class="text-xs text-gray-500 text-center mb-3">Catat token ini sekarang — halaman ini tidak akan menampilkannya lagi setelah ditutup. Berlaku 2 hari.</p>
-                <a href="{{ route('voting.token-form.remote') }}" class="block text-center py-3 bg-indigo-600 text-white rounded font-semibold">Lanjut ke Bilik Suara Remote</a>
-            @else
-                <p class="text-center text-gray-600">Verifikasi disetujui, tapi token sudah pernah diambil atau kedaluwarsa. Hubungi panitia jika ini keliru.</p>
+@section('content')
+<style>.login-page { background-color: #f4f6f9; }</style>
+<div class="login-box" style="width: 480px;">
+    <div class="card card-outline card-primary">
+        <div class="card-header text-center">
+            <span class="h5 font-weight-bold">Status Verifikasi Remote</span>
+        </div>
+        <div class="card-body p-4 text-center">
+            
+            @if($rv->status === 'pending')
+                <div class="py-4">
+                    <i class="fas fa-clock text-warning mb-3" style="font-size: 56px;"></i>
+                    <h4 class="font-weight-bold">Masih Dalam Proses</h4>
+                    <p class="text-muted text-sm mt-2">
+                        Pengajuan Anda sedang diperiksa oleh petugas verifikator (Tahap 1 & 2). Silakan periksa kembali secara berkala.
+                    </p>
+                    <a href="{{ route('remote.status.form') }}" class="btn btn-default btn-sm mt-3">
+                        <i class="fas fa-sync-alt mr-1"></i> Segarkan Status
+                    </a>
+                </div>
+
+            @elseif($rv->status === 'rejected')
+                <div class="py-4">
+                    <i class="fas fa-times-circle text-danger mb-3" style="font-size: 56px;"></i>
+                    <h4 class="font-weight-bold text-danger">Pengajuan Ditolak</h4>
+                    <div class="alert alert-danger mt-3 text-left text-sm">
+                        <strong>Alasan Penolakan:</strong><br>
+                        {{ $rv->reject_reason }}
+                    </div>
+                    <p class="text-muted text-xs">Silakan perbaiki dokumen Anda dan lakukan pengajuan ulang jika sesi verifikasi masih dibuka.</p>
+                </div>
+
+            @elseif($rv->status === 'approved')
+                @if($token)
+                    <div class="py-3">
+                        <i class="fas fa-shield-alt text-success mb-3" style="font-size: 56px;"></i>
+                        <h4 class="font-weight-bold text-success">Verifikasi Disetujui!</h4>
+                        <p class="text-muted text-sm">Berikut adalah token rahasia untuk masuk ke bilik suara digital:</p>
+                        
+                        <div class="bg-light border border-success rounded p-3 my-3">
+                            <span class="h1 font-weight-bold text-success font-monospace" style="letter-spacing: 6px;">
+                                {{ $token }}
+                            </span>
+                        </div>
+
+                        <div class="alert alert-warning text-xs text-left mb-4">
+                            <i class="fas fa-exclamation-triangle mr-1"></i> <strong>Perhatian:</strong> Catat atau salin token ini sekarang! Halaman ini <u>tidak akan menampilkannya lagi</u> setelah ditutup. Token berlaku selama 2 hari.
+                        </div>
+
+                        <a href="{{ route('voting.token-form.remote') }}" class="btn btn-success btn-block btn-lg font-weight-bold shadow">
+                            <i class="fas fa-vote-yea mr-2"></i> Lanjut ke Bilik Suara Remote
+                        </a>
+                    </div>
+                @else
+                    <div class="py-4">
+                        <i class="fas fa-exclamation-circle text-secondary mb-3" style="font-size: 56px;"></i>
+                        <h4 class="font-weight-bold">Token Tidak Tersedia</h4>
+                        <p class="text-muted text-sm mt-2">
+                            Verifikasi Anda disetujui, namun token sudah pernah diambil atau masa berlakunya telah habis.
+                        </p>
+                        <p class="text-xs text-muted">Hubungi panitia pemilihan jika Anda merasa ini adalah sebuah kesalahan.</p>
+                    </div>
+                @endif
             @endif
-        @endif
+
+        </div>
     </div>
-</x-guest-layout>
+</div>
+@endsection
