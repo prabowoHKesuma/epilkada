@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Services\AuditLogger;
 use App\Models\VotingToken;
+use Exception;
 
 class VotingController extends Controller
 {
@@ -48,56 +49,79 @@ class VotingController extends Controller
         return view('voting.booth', compact('election'));
     }
 
+    // ---------------------------------------------------------
+    // FUNGSI SUBMIT TPS (SUDAH DIUPGRADE DENGAN ENKRIPSI & JSON)
+    // ---------------------------------------------------------
     public function submitVote(Request $request)
     {
         $request->validate(['candidate_id' => ['required', 'exists:candidates,id']]);
 
         $boothToken = $this->getSessionToken();
         if (! $boothToken) {
-            return redirect()->route('voting.token-form')->withErrors(['token' => 'Sesi tidak valid, masukkan token lagi.']);
+            // Ubah menjadi return JSON karena ditembak via AJAX
+            return response()->json(['success' => false, 'message' => 'Sesi tidak valid, silakan refresh halaman dan masukkan token lagi.'], 401);
         }
 
-        DB::transaction(function () use ($boothToken, $request) {
-            // Kunci baris token ini -- cegah request lain memproses token yang sama secara bersamaan
-            $lockedToken = TpsBoothToken::where('id', $boothToken->id)->lockForUpdate()->first();
+        try {
+            DB::transaction(function () use ($boothToken, $request) {
+                // 1. Kunci baris token ini -- cegah request ganda secara milidetik
+                $lockedToken = TpsBoothToken::where('id', $boothToken->id)->lockForUpdate()->first();
 
-            if (! $this->tokenIsValid($lockedToken)) {
-                abort(422, 'Token sudah tidak berlaku, kemungkinan sudah dipakai di request lain.');
-            }
+                if (! $this->tokenIsValid($lockedToken)) {
+                    throw new Exception('Token sudah tidak berlaku, kemungkinan sudah terpakai.');
+                }
 
-            $candidate = Candidate::where('id', $request->candidate_id)
-                ->where('election_id', $lockedToken->election_id)
-                ->firstOrFail();
+                $candidate = Candidate::where('id', $request->candidate_id)
+                    ->where('election_id', $lockedToken->election_id)
+                    ->firstOrFail();
 
-            Ballot::create([
-                'election_id' => $lockedToken->election_id,
-                'candidate_id' => $candidate->id,
-                'ballot_code' => Str::random(32),
-                'vote_channel' => 'tps',
-            ]);
-            // Perhatikan: SENGAJA tidak ada voter_id di atas -- jaga kerahasiaan suara
+                // 2. PROSES ENKRIPSI END-TO-END
+                $publicKeyString = str_replace('\n', "\n", env('ELECTION_PUBLIC_KEY'));
+                $encryptedData = '';
+                $isEncrypted = openssl_public_encrypt($candidate->id, $encryptedData, $publicKeyString);
+                
+                if (!$isEncrypted) {
+                    throw new Exception('Sistem gagal mengenkripsi suara Anda.');
+                }
+                
+                $base64EncryptedVote = base64_encode($encryptedData);
 
-            $lockedToken->used_at = now();
-            $lockedToken->save();
+                // 3. SIMPAN KE KOTAK SUARA
+                Ballot::create([
+                    'election_id' => $lockedToken->election_id,
+                    'ballot_code' => Str::random(32),
+                    'vote_channel' => 'tps',
+                    'encrypted_vote' => $base64EncryptedVote,
+                    // Pastikan 'candidate_id' tidak dimasukkan lagi agar rahasia
+                ]);
 
-            $electionVoter = ElectionVoter::where('id', $lockedToken->election_voter_id)->lockForUpdate()->first();
-            $electionVoter->has_voted = true;
-            $electionVoter->voted_at = now();
-            $electionVoter->save();
-        });
+                // 4. HANGUSKAN TOKEN
+                $lockedToken->used_at = now();
+                $lockedToken->save();
 
-        AuditLogger::log('cast_vote', 'Satu suara TPS tercatat.', ['election_id' => $boothToken->election_id]);
+                // 5. UPDATE STATUS PEMILIH
+                $electionVoter = ElectionVoter::where('id', $lockedToken->election_voter_id)->lockForUpdate()->first();
+                $electionVoter->has_voted = true;
+                $electionVoter->voted_at = now();
+                $electionVoter->save();
+            });
 
-        session()->forget('voting_token_id');
-        return redirect()->route('voting.thankyou');
+            AuditLogger::log('cast_vote', 'Satu suara TPS tercatat (Terenkripsi).', ['election_id' => $boothToken->election_id]);
+            session()->forget('voting_token_id');
+
+            // Berhasil! Kirim respon JSON ke AJAX
+            return response()->json(['success' => true, 'message' => 'Suara berhasil diamankan!']);
+
+        } catch (Exception $e) {
+            // Gagal! (Entah karena token ganda atau error enkripsi), kirim JSON error
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
     }
 
     public function thankyou()
     {
         return view('voting.thankyou');
     }
-
-    // --- Helper privat ---
 
     private function tokenIsValid(?TpsBoothToken $token): bool
     {
@@ -173,49 +197,71 @@ class VotingController extends Controller
         return view('voting.booth-remote', compact('election'));
     }
 
+    // ---------------------------------------------------------
+    // FUNGSI SUBMIT REMOTE (SUDAH DIUPGRADE DENGAN ENKRIPSI & JSON)
+    // ---------------------------------------------------------
     public function submitVoteRemote(Request $request)
     {
         $request->validate(['candidate_id' => ['required', 'exists:candidates,id']]);
 
         $votingToken = $this->getSessionTokenRemote();
         if (! $votingToken) {
-            return redirect()->route('voting.token-form.remote')->withErrors(['token' => 'Sesi tidak valid, masukkan token lagi.']);
+            return response()->json(['success' => false, 'message' => 'Sesi tidak valid, silakan refresh halaman.'], 401);
         }
 
-        DB::transaction(function () use ($votingToken, $request) {
-            $lockedToken = VotingToken::where('id', $votingToken->id)->lockForUpdate()->first();
+        try {
+            DB::transaction(function () use ($votingToken, $request) {
+                // 1. Kunci Baris Token
+                $lockedToken = VotingToken::where('id', $votingToken->id)->lockForUpdate()->first();
 
-            if (! $this->tokenIsValidRemote($lockedToken)) {
-                abort(422, 'Token sudah tidak berlaku, kemungkinan sudah dipakai di request lain.');
-            }
+                if (! $this->tokenIsValidRemote($lockedToken)) {
+                    throw new Exception('Token sudah tidak berlaku, kemungkinan sudah terpakai.');
+                }
 
-            $candidate = Candidate::where('id', $request->candidate_id)
-                ->where('election_id', $lockedToken->election_id)
-                ->firstOrFail();
+                $candidate = Candidate::where('id', $request->candidate_id)
+                    ->where('election_id', $lockedToken->election_id)
+                    ->firstOrFail();
 
-            Ballot::create([
-                'election_id' => $lockedToken->election_id,
-                'candidate_id' => $candidate->id,
-                'ballot_code' => Str::random(32),
-                'vote_channel' => 'remote',
-            ]);
+                // 2. PROSES ENKRIPSI END-TO-END
+                $publicKeyString = str_replace('\n', "\n", env('ELECTION_PUBLIC_KEY'));
+                $encryptedData = '';
+                $isEncrypted = openssl_public_encrypt($candidate->id, $encryptedData, $publicKeyString);
+                
+                if (!$isEncrypted) {
+                    throw new Exception('Sistem gagal mengenkripsi suara Anda.');
+                }
+                
+                $base64EncryptedVote = base64_encode($encryptedData);
 
-            $lockedToken->used_at = now();
-            $lockedToken->save();
+                // 3. SIMPAN KE KOTAK SUARA
+                Ballot::create([
+                    'election_id' => $lockedToken->election_id,
+                    'ballot_code' => Str::random(32),
+                    'vote_channel' => 'remote',
+                    'encrypted_vote' => $base64EncryptedVote,
+                ]);
 
-            $electionVoter = ElectionVoter::where('election_id', $lockedToken->election_id)
-                ->where('voter_id', $lockedToken->voter_id)
-                ->lockForUpdate()
-                ->first();
-            $electionVoter->has_voted = true;
-            $electionVoter->voted_at = now();
-            $electionVoter->save();
-        });
+                // 4. HANGUSKAN TOKEN
+                $lockedToken->used_at = now();
+                $lockedToken->save();
 
-        AuditLogger::log('cast_vote', 'Satu suara Remote tercatat.', ['election_id' => $votingToken->election_id]);
+                // 5. UPDATE STATUS PEMILIH
+                $electionVoter = ElectionVoter::where('election_id', $lockedToken->election_id)
+                    ->where('voter_id', $lockedToken->voter_id)
+                    ->lockForUpdate()
+                    ->first();
+                $electionVoter->has_voted = true;
+                $electionVoter->voted_at = now();
+                $electionVoter->save();
+            });
 
-        session()->forget('remote_voting_token_id');
-        return redirect()->route('voting.thankyou');
+            AuditLogger::log('cast_vote', 'Satu suara Remote tercatat (Terenkripsi).', ['election_id' => $votingToken->election_id]);
+            session()->forget('remote_voting_token_id');
+
+            return response()->json(['success' => true, 'message' => 'Suara berhasil diamankan!']);
+
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
     }
-
 }

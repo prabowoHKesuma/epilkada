@@ -60,6 +60,9 @@
                  Gunakan route('voting.submit.remote') untuk Remote -->
             <form action="{{ route('voting.submit') }}" method="POST" id="voteForm">
                 @csrf
+                <input type="hidden" name="election_id" id="election_id" value="{{ $election->id }}">
+                {{-- <input type="hidden" name="token_string" id="token_string" value="{{ $token }}"> --}}
+                <input type="hidden" name="candidate_id" id="candidate_id" value="">
                 
                 <!-- Grid Kandidat -->
                 <div class="row justify-content-center">
@@ -175,10 +178,76 @@
     });
 
     $('#voteForm').submit(function(e) {
+        // 1. WAJIB: Hentikan halaman agar tidak me-refresh/berpindah secara bawaan HTML
+        e.preventDefault();
+
         const selectedName = $('.candidate-card.active').data('name');
-        if (!confirm('Peringatan Terakhir!\n\nYakin ingin mengirim suara untuk:\n' + selectedName + '?\n\nSuara yang sudah dikirim bersifat final dan TIDAK BISA diubah kembali.')) {
-            e.preventDefault();
+        
+        // Validasi jika user mencoba membobol submit tanpa memilih
+        if (!selectedName) {
+            alert('Silakan pilih salah satu kandidat terlebih dahulu!');
+            return false;
         }
+
+        // Konfirmasi akhir ke pemilih
+        if (!confirm('Peringatan Terakhir!\n\nYakin ingin mengirim suara untuk:\n' + selectedName + '?\n\nSuara yang sudah dikirim bersifat final dan TIDAK BISA diubah kembali.')) {
+            return false;
+        }
+
+        // 2. Ubah UI tombol dan status menjadi "Loading" agar pemilih tahu sistem sedang bekerja
+        $('#btnKirim').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Mengamankan Suara...');
+        $('#statusBox').removeClass('alert-success alert-info').addClass('alert-warning')
+                       .html('<i class="fas fa-lock mr-1"></i> Sedang mengenkripsi dan mengunci data suara di server. Mohon tunggu...');
+
+        // 3. Susun data yang akan dikirim ke backend secara sunyi (AJAX)
+        const formData = {
+            election_id: $('#election_id').val(),
+            token_string: $('#token_string').val(),
+            // Mengambil ID Kandidat dari input radio yang otomatis di-check oleh script selectCandidate Anda
+            candidate_id: $('input[name="candidate_id"]:checked').val(), 
+            _token: $('input[name="_token"]').val() // Token CSRF Laravel
+        };
+
+        // 4. Eksekusi pengiriman data ke Controller (Backend)
+        $.ajax({
+            // Secara otomatis mengambil url dari atribut action="{{ route('voting.submit') }}" di form Anda
+            url: $('#voteForm').attr('action'), 
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            success: function(response) {
+                // BLOK INI JALAN JIKA BACKEND MENJAWAB SUKSES (Token Valid & Suara Terenkripsi)
+                if (response.success) {
+                    $('#statusBox').removeClass('alert-warning').addClass('alert-success')
+                                   .html('<i class="fas fa-check-circle mr-1"></i> Suara Anda berhasil diamankan!');
+                    
+                    alert('Terima kasih! Suara Anda telah sah dikunci ke dalam kotak suara digital.');
+                    
+                    // Arahkan pemilih ke halaman sukses/terima kasih
+                    // Ubah '/voting-success' sesuai dengan alamat route halaman sukses Anda
+                    window.location.href = '/vote/selesai'; 
+                }
+            },
+            error: function(xhr) {
+                // BLOK INI JALAN JIKA BACKEND MENOLAK (Terdeteksi curang 2 tab / Token sudah terpakai)
+                
+                // Kembalikan tombol ke keadaan semula agar tidak loading terus
+                $('#btnKirim').prop('disabled', false).html('<i class="fas fa-paper-plane mr-2"></i> Konfirmasi & Kirim Suara Sekarang');
+                
+                let errorMsg = 'Terjadi kesalahan pada server atau jaringan.';
+                
+                // Tangkap pesan error spesifik dari Controller (Pessimistic Locking)
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+
+                // Tampilkan pesan error warna merah di status box
+                $('#statusBox').removeClass('alert-warning alert-info').addClass('alert-danger')
+                               .html('<i class="fas fa-exclamation-triangle mr-1"></i> <strong>Pencoblosan Ditolak:</strong> ' + errorMsg);
+                
+                alert('Gagal mengirim suara: ' + errorMsg);
+            }
+        });
     });
 </script>
 </body>
