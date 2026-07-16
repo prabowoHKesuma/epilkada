@@ -16,6 +16,7 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\RemoteVerificationController;
 use App\Http\Controllers\RemoteVerificationReviewController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\RoleController;
 
 Route::get('/', function () {
     return view('auth.login');
@@ -105,6 +106,10 @@ Route::middleware(['auth', 'permission:verify_remote_voter'])->group(function ()
     Route::patch('/remote-review/{rv}/approve-1', [RemoteVerificationReviewController::class, 'approveStep1'])->name('remote-review.approve1');
     Route::patch('/remote-review/{rv}/approve-2', [RemoteVerificationReviewController::class, 'approveStep2'])->name('remote-review.approve2');
     Route::post('/remote-review/{rv}/reject', [RemoteVerificationReviewController::class, 'reject'])->name('remote-review.reject');
+});
+
+Route::middleware(['auth', 'permission:manage_roles'])->group(function () {
+    Route::resource('roles', RoleController::class)->except(['show']);
 });
 
 require __DIR__.'/auth.php';
