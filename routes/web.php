@@ -80,8 +80,6 @@ Route::middleware(['throttle:10,1',\App\Http\Middleware\NoCacheVotingPages::clas
     Route::get('/vote/remote/booth', [VotingController::class, 'showBoothRemote'])->name('voting.booth.remote');
     Route::post('/vote/remote/submit', [VotingController::class, 'submitVoteRemote'])->name('voting.submit.remote');
 
-    /* Route::get('/elections/{election}/remote/ajukan', [RemoteVerificationController::class, 'form'])->name('remote.form');
-    Route::post('/elections/{election}/remote/ajukan', [RemoteVerificationController::class, 'submit'])->name('remote.submit'); */
     Route::get('/remote/undangan/{invitationToken}', [RemoteVerificationController::class, 'formByInvitation'])->name('remote.form.invitation');
     Route::post('/remote/undangan/{invitationToken}', [RemoteVerificationController::class, 'submitByInvitation'])->name('remote.submit.invitation');
     Route::get('/remote/status', [RemoteVerificationController::class, 'checkStatusForm'])->name('remote.status.form');
