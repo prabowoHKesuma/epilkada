@@ -4,34 +4,43 @@ namespace App\Http\Controllers;
 
 use App\Models\Election;
 use App\Models\Ballot;
+use App\Models\ElectionVoter;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
+use App\Services\AuditLogger;
 
 class ResultController extends Controller
 {
     public function show(Election $election)
     {
-        // 1. Validasi Status Pemilihan
-        abort_if(
-            ! in_array($election->status, ['closed', 'finished']),
-            403,
-            'Hasil hanya bisa dilihat setelah pemungutan suara ditutup.'
-        );
+        // ====================================================================
+        // 1. LOGIKA PETI ES (ICE BOX) 
+        // ====================================================================
+        if (in_array($election->status, ['draft', 'open'])) {
+            AuditLogger::log('unauthorized_result_access', "Mencoba mengintip hasil pemilihan yang masih berjalan: {$election->title}", [
+                'election_id' => $election->id,
+                'user_id' => auth()->id()
+            ]);
+            abort(403, 'PETI ES AKTIF: Hasil perolehan suara masih digembok secara sistem. Hasil baru bisa dilihat setelah pemungutan suara resmi ditutup.');
+        }
 
-        // 2. Ambil Kunci Privat untuk Dekripsi
+        // ====================================================================
+        // 2. PROSES DEKRIPSI SURAT SUARA (CRYPTOGRAPHY)
+        // ====================================================================
         $privateKeyString = str_replace('\n', "\n", env('ELECTION_PRIVATE_KEY'));
-
-        // 3. Ambil data mentah dari Database
-        $candidates = $election->candidates()->get();
+        
+        // Ambil data mentah tanpa agregasi database
+        $candidates = $election->candidates()->orderBy('number_order', 'asc')->get();
         $ballots = $election->ballots()->get();
 
-        // 4. Proses Dekripsi & Penghitungan Suara di Memori
         $voteCounts = [];
+        $totalVotes = 0; // Menghitung total suara sah yang berhasil didekripsi
         
         foreach ($ballots as $ballot) {
             $encryptedData = base64_decode($ballot->encrypted_vote);
             $decryptedCandidateId = '';
             
-            // Buka gembok suara satu per satu
+            // Buka gembok enkripsi menggunakan Private Key
             $success = openssl_private_decrypt($encryptedData, $decryptedCandidateId, $privateKeyString);
 
             if ($success) {
@@ -39,26 +48,52 @@ class ResultController extends Controller
                     $voteCounts[$decryptedCandidateId] = 0;
                 }
                 $voteCounts[$decryptedCandidateId]++;
+                $totalVotes++; // Tambahkan ke total suara sah
             }
         }
 
-        // 5. Suntikkan hasil hitungan (Real Count) ke dalam object Kandidat
+        // Suntikkan hasil hitungan (Real Count) ke dalam object Kandidat
         foreach ($candidates as $candidate) {
-            // Masukkan jumlah suara ke property ballots_count (default 0 jika tidak ada suara)
-            // Ini agar file View (results.show) Anda tetap berfungsi tanpa diubah
             $candidate->ballots_count = $voteCounts[$candidate->id] ?? 0;
         }
 
-        // 6. Urutkan dari suara terbanyak ke terkecil
-        $results = $candidates->sortByDesc('ballots_count')->values();
+        // Re-attach data kandidat yang sudah punya ballots_count ke dalam object $election
+        // Ini memastikan View blade yang memanggil $election->candidates bisa membaca angkanya
+        $election->setRelation('candidates', $candidates);
 
-        // 7. Hitung statistik keseluruhan
-        $totalSuara = $ballots->count();
-        $totalTerdaftar = $election->electionVoters()->count();
-        $totalSudahMemilih = $election->electionVoters()->where('has_voted', true)->count();
+        // ====================================================================
+        // 3. KALKULASI STATISTIK DASHBOARD
+        // ====================================================================
+        $totalCandidates = $candidates->count();
+        $totalVoters = $election->eligibleVoters()->count(); 
 
-        // 8. Tampilkan ke Halaman
-        return view('results.show', compact('election', 'results', 'totalSuara', 'totalTerdaftar', 'totalSudahMemilih'));
+        // Hitung pemilih berdasarkan kolom 'has_voted' yang akurat
+        $votedCount = $election->eligibleVoters()->where('has_voted', true)->count();
+        $notVotedCount = $totalVoters > $votedCount ? ($totalVoters - $votedCount) : 0;
+        
+        // Persentase Partisipasi
+        $participationRate = $totalVoters > 0 ? round(($votedCount / $totalVoters) * 100, 1) : 0;
+
+        // ====================================================================
+        // 4. STATISTIK CHANNEL ALOKASI (TPS vs REMOTE)
+        // ====================================================================
+        $channelStats = ElectionVoter::where('election_id', $election->id)
+            ->select('allowed_channel', DB::raw('count(*) as total'))
+            ->groupBy('allowed_channel')
+            ->get();
+
+        // ====================================================================
+        // 5. RENDER KE VIEW
+        // ====================================================================
+        return view('results.show', compact(
+            'election', 
+            'totalCandidates', 
+            'totalVoters', 
+            'totalVotes', 
+            'votedCount', 
+            'notVotedCount', 
+            'participationRate',
+            'channelStats'
+        ));
     }
-
 }
