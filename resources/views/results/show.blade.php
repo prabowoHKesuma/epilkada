@@ -10,8 +10,10 @@
             </div>
             <div class="col-sm-6 text-right">
                 <!-- Tombol Aksi -->
-                <a href="#" class="btn btn-dark"><i class="fas fa-print mr-1"></i> Cetak Berita Acara</a>
-                <a href="#" class="btn btn-success"><i class="fas fa-file-csv mr-1"></i> Export CSV</a>
+                <a href="{{ route('results.print', $election) }}" target="_blank" class="btn btn-dark">
+                    <i class="fas fa-print mr-1"></i> Cetak Berita Acara
+                </a>
+                <a href="{{ route('results.csv', $election) }}" class="btn btn-success"><i class="fas fa-file-csv mr-1"></i> Export CSV</a>
                 <a href="{{ route('elections.show', $election) }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> Kembali</a>
             </div>
         </div>
