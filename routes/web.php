@@ -52,11 +52,21 @@ Route::middleware(['auth', 'permission:manage_candidate'])->group(function () {
     Route::delete('/elections/{election}/candidates/{candidate}', [CandidateController::class, 'destroy'])->name('candidates.destroy');
 });
 
+Route::middleware(['auth', 'permission:manage_voter|view_voter'])->group(function () {
+    // Halaman daftar master pemilih
+    Route::get('voters', [VoterController::class, 'index'])->name('voters.index');
+    // Halaman daftar pemilih di dalam suatu pemilihan spesifik
+    Route::get('/elections/{election}/voters', [ElectionVoterController::class, 'index'])->name('election-voters.index');
+});
+
 Route::middleware(['auth', 'permission:manage_voter'])->group(function () {
     Route::resource('voters', VoterController::class)->except(['show']);
+
     Route::get('/voters/import', [VoterImportController::class, 'form'])->name('voters.import.form');
     Route::post('/voters/import', [VoterImportController::class, 'process'])->name('voters.import.process');
+
     Route::get('/elections/{election}/voters', [ElectionVoterController::class, 'index'])->name('election-voters.index');
+
     Route::post('/elections/{election}/voters', [ElectionVoterController::class, 'store'])->name('election-voters.store');
     Route::delete('/elections/{election}/voters/{electionVoter}', [ElectionVoterController::class, 'destroy'])->name('election-voters.destroy');
     Route::patch('/elections/{election}/voters/{electionVoter}/channel', [ElectionVoterController::class, 'changeChannel'])->name('election-voters.change-channel');

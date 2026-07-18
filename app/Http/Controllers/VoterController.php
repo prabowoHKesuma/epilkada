@@ -9,6 +9,7 @@ use App\Http\Requests\StoreVoterRequest;
 use App\Services\PiiHasher;
 use Illuminate\Validation\ValidationException;
 use App\Services\AuditLogger;
+use Illuminate\Support\Facades\Auth;
 
 class VoterController extends Controller
 {
@@ -26,7 +27,9 @@ class VoterController extends Controller
      */
     public function create()
     {
-        $regions = Region::where('level', 'rt')->orWhere('level', 'rw')->get();
+        // Panggil fungsi helper untuk mendapatkan region sesuai hak akses user
+        $regions = $this->getAllowedRegions();
+        
         return view('voters.create', compact('regions'));
     }
 
@@ -72,7 +75,9 @@ class VoterController extends Controller
      */
     public function edit(Voter $voter)
     {
-        $regions = Region::where('level', 'rt')->orWhere('level', 'rw')->get();
+        // Panggil fungsi helper untuk mendapatkan region sesuai hak akses user
+        $regions = $this->getAllowedRegions();
+        
         return view('voters.edit', compact('voter', 'regions'));
     }
 
@@ -113,5 +118,51 @@ class VoterController extends Controller
         AuditLogger::log('voter_deactivate', "Pemilih dinonaktifkan: {$voter->name}", ['voter_id' => $voter->id]);
 
         return redirect()->route('voters.index')->with('status', 'Pemilih dinonaktifkan.');
+    }
+
+    // =========================================================================
+    // HELPER METHODS UNTUK HIERARKI REGION
+    // =========================================================================
+
+    /**
+     * Mengambil daftar wilayah yang diizinkan untuk dikelola oleh user yang login.
+     */
+    private function getAllowedRegions()
+    {
+        $user = Auth::user();
+
+        // Kita batasi hanya menampilkan level kelurahan, rw, dan rt di form Pendaftaran Pemilih
+        $query = Region::whereIn('level', ['kelurahan', 'rw', 'rt']);
+
+        // Jika dia bukan superadmin, kita filter sesuai wilayah kekuasaannya
+        if (!$user->hasRole('superadmin')) {
+            if ($user->region_id) {
+                // Ambil ID-nya sendiri dan semua bawahannya (sama seperti di RegionScope)
+                $allowedIds = $this->getDescendantRegionIds($user->region_id);
+                $allowedIds[] = $user->region_id;
+
+                $query->whereIn('id', $allowedIds);
+            } else {
+                // User biasa tanpa region_id = tidak bisa melihat pilihan wilayah apapun
+                $query->whereNull('id');
+            }
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Fungsi rekursif untuk mencari ID anak, cucu, dst.
+     */
+    private function getDescendantRegionIds($parentId): array
+    {
+        $childIds = Region::where('parent_id', $parentId)->pluck('id')->toArray();
+        $allIds = $childIds;
+        
+        foreach ($childIds as $childId) {
+            $allIds = array_merge($allIds, $this->getDescendantRegionIds($childId));
+        }
+
+        return $allIds;
     }
 }

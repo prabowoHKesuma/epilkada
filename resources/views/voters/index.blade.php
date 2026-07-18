@@ -27,12 +27,14 @@
             <div class="card-header">
                 <h3 class="card-title">Data Master Pemilih (Voters)</h3>
                 <div class="card-tools">
+                    @can('manage_voter')
                     <a href="{{ route('voters.create') }}" class="btn btn-sm btn-primary">
                         <i class="fas fa-plus"></i> Tambah Pemilih
                     </a>
                     <a href="{{ route('voters.import.form') }}" class="btn btn-sm btn-success ml-1">
                         <i class="fas fa-file-import"></i> Import CSV
                     </a>
+                    @endcan
                 </div>
             </div>
             
@@ -63,18 +65,22 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('voters.edit', $voter) }}" class="btn btn-xs btn-info">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </a>
-                                    @if($voter->is_active)
-                                        <form action="{{ route('voters.destroy', $voter) }}" method="POST" class="d-inline" onsubmit="return confirm('Nonaktifkan pemilih ini?')">
-                                            @csrf 
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-xs btn-danger ml-1">
-                                                <i class="fas fa-ban"></i> Nonaktifkan
-                                            </button>
-                                        </form>
-                                    @endif
+                                    @can('manage_voter')
+                                        <a href="{{ route('voters.edit', $voter) }}" class="btn btn-xs btn-info">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        @if($voter->is_active)
+                                            <form action="{{ route('voters.destroy', $voter) }}" method="POST" class="d-inline" onsubmit="return confirm('Nonaktifkan pemilih ini?')">
+                                                @csrf 
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-xs btn-danger ml-1">
+                                                    <i class="fas fa-ban"></i> Nonaktifkan
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @else
+                                        <span class="text-muted text-xs"><i class="fas fa-lock"></i> Read Only</span>
+                                    @endcan
                                 </td>
                             </tr>
                         @empty

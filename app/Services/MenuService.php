@@ -13,6 +13,20 @@ class MenuService
             return collect();
         }
 
+        $user = Auth::user();
+
+        // 1. Bypass untuk Superadmin: Tarik SEMUA menu yang aktif
+        if ($user->hasRole('superadmin')) {
+            return Menu::whereNull('parent_id')
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->with(['children' => function ($q) {
+                    $q->where('is_active', true)
+                      ->orderBy('sort_order');
+                }])
+                ->get();
+        }
+
         $roleIds = Auth::user()->roles->pluck('id');
 
         return Menu::whereNull('parent_id')
