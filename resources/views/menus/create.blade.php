@@ -46,6 +46,12 @@
                             </div>
 
                             <div class="form-group">
+                                <label for="permission_name">Nama Permission</label>
+                                <small class="d-block text-muted mb-2">Nama permission yang terkait dengan menu ini (contoh: manage_voter)</small>
+                                <input type="text" name="permission_name" id="permission_name" class="form-control" value="{{ old('permission_name') }}" placeholder="contoh: manage_voter">
+                            </div>
+
+                            <div class="form-group">
                                 <label for="icon_class">Class Ikon (Font Awesome)</label>
                                 <input type="text" name="icon_class" id="icon_class" class="form-control" value="{{ old('icon_class', 'fas fa-circle') }}" placeholder="contoh: fas fa-users">
                             </div>

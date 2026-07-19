@@ -42,6 +42,7 @@
               <th>Judul Menu</th>
               <th>URL</th>
               <th class="text-center">Urutan</th>
+              <th class="text-center">Permission</th>
               <th class="text-center">Status</th>
               <th class="text-center" style="width: 180px;">Aksi</th>
             </tr>
@@ -52,6 +53,7 @@
                     <td><strong><i class="{{ $menu->icon_class ?? 'fas fa-folder' }} mr-2 text-muted"></i> {{ $menu->title }}</strong></td>
                     <td><code>{{ $menu->url ?? '#' }}</code></td>
                     <td class="text-center">{{ $menu->sort_order }}</td>
+                    <td class="text-center">{{ $menu->permission_name ?? '-' }}</td>
                     <td class="text-center">
                         @if($menu->is_active)
                             <span class="badge badge-success">Aktif</span>
@@ -81,6 +83,7 @@
                         </td>
                         <td><code>{{ $child->url }}</code></td>
                         <td class="text-center">{{ $child->sort_order }}</td>
+                        <td class="text-center">{{ $child->permission_name ?? '-' }}</td>
                         <td class="text-center">
                             @if($child->is_active)
                                 <span class="badge badge-success">Aktif</span>

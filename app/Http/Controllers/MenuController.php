@@ -41,6 +41,7 @@ class MenuController extends Controller
             'parent_id' => ['nullable', 'exists:menus,id'],
             'sort_order' => ['nullable', 'integer'],
             'role_ids' => ['nullable', 'array'],
+            'permission_name' => ['nullable', 'string', 'max:100'],
         ]);
 
         $menu = Menu::create([
@@ -49,6 +50,7 @@ class MenuController extends Controller
             'title' => $validated['title'],
             'url' => $validated['url'] ?? null,
             'icon_class' => $validated['icon_class'] ?? 'fas fa-circle',
+            'permission_name' => $validated['permission_name'] ?? null,
             'sort_order' => $validated['sort_order'] ?? 0,
             'is_active' => true,
         ]);
@@ -94,6 +96,7 @@ class MenuController extends Controller
             'sort_order' => ['nullable', 'integer'],
             'is_active' => ['nullable', 'boolean'],
             'role_ids' => ['nullable', 'array'],
+            'permission_name' => ['nullable', 'string', 'max:100'],
         ]);
 
         $menu->update([
@@ -102,6 +105,7 @@ class MenuController extends Controller
             'title' => $validated['title'],
             'url' => $validated['url'] ?? null,
             'icon_class' => $validated['icon_class'] ?? 'fas fa-circle',
+            'permission_name' => $validated['permission_name'] ?? null,
             'sort_order' => $validated['sort_order'] ?? 0,
             'is_active' => $request->boolean('is_active'),
         ]);

@@ -17,13 +17,11 @@
                 @endphp
                 
                 <!-- LEVEL 1: MENU DENGAN SUB-MENU (DROPDOWN) -->
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        {{-- Icon Dinamis dari Database --}}
+                <<li class="nav-item {{ $isParentActive ? 'menu-is-opening menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ $isParentActive ? 'active' : '' }}">
                         <i class="nav-icon {{ $menu->icon_class ?? 'fas fa-folder' }}"></i>
                         <p>
                             {{ $menu->title }}
-                            {{-- Panah indikator dropdown otomatis di kanan --}}
                             <i class="right fas fa-angle-left"></i>
                         </p>
                     </a>
