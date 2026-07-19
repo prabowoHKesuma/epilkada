@@ -8,6 +8,7 @@
                 <h1 class="m-0 font-weight-bold">Detail Hasil Pemilihan</h1>
                 <p class="text-muted mb-0">{{ $election->title }}</p>
             </div>
+            @can('print_result')
             <div class="col-sm-6 text-right">
                 <!-- Tombol Aksi -->
                 <a href="{{ route('results.print', $election) }}" target="_blank" class="btn btn-dark">
@@ -16,6 +17,7 @@
                 <a href="{{ route('results.csv', $election) }}" class="btn btn-success"><i class="fas fa-file-csv mr-1"></i> Export CSV</a>
                 <a href="{{ route('elections.show', $election) }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> Kembali</a>
             </div>
+            @endcan
         </div>
     </div>
 </div>

@@ -36,9 +36,11 @@
             <div class="card-header">
                 <h3 class="card-title">Daftar Agenda Pemilihan (Elections)</h3>
                 <div class="card-tools">
+                    @can('manage_election')
                     <a href="{{ route('elections.create') }}" class="btn btn-sm btn-primary">
                         <i class="fas fa-plus"></i> Buat Pemilihan
                     </a>
+                    @endcan
                 </div>
             </div>
             
@@ -75,10 +77,15 @@
                                     </small>
                                 </td>
                                 <td>
-                                    <a href="{{ route('elections.show', $election) }}" class="btn btn-xs btn-primary">
+                                   
+                                    @can('view_result')
+                                        <a href="{{ route('results.show', $election->id) }}" class="btn btn-info">Lihat Hasil</a>
+                                    @endcan
+                                    
+                                    @can('manage_election')
+                                     <a href="{{ route('elections.show', $election) }}" class="btn btn-xs btn-primary">
                                         <i class="fas fa-eye"></i> Detail
                                     </a>
-                                    
                                     @if($election->status === 'draft')
                                         <a href="{{ route('elections.edit', $election) }}" class="btn btn-xs btn-info ml-1">
                                             <i class="fas fa-edit"></i> Edit
@@ -91,6 +98,7 @@
                                             </button>
                                         </form>
                                     @endif
+                                    @endcan
                                 </td>
                             </tr>
                         @empty

@@ -32,8 +32,14 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// 1. Buka gerbang daftar Pemilihan untuk Pengelola ATAU Pelihat Hasil
+Route::middleware(['auth', 'permission:manage_election|view_result'])->group(function () {
+    Route::get('elections', [ElectionController::class, 'index'])->name('elections.index');
+});
+
+// 2. Kunci sisa fungsi CRUD (Create, Edit, Delete) ketat hanya untuk Pengelola
 Route::middleware(['auth', 'permission:manage_election'])->group(function () {
-    Route::resource('elections', ElectionController::class);
+    Route::resource('elections', ElectionController::class)->except(['index']);
     Route::patch('/elections/{election}/publish', [ElectionController::class, 'publish'])->name('elections.publish');
     Route::patch('/elections/{election}/close', [ElectionController::class, 'close'])->name('elections.close');
     Route::patch('/elections/{election}/finish', [ElectionController::class, 'finish'])->name('elections.finish');
