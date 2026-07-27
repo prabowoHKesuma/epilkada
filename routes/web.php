@@ -17,6 +17,7 @@ use App\Http\Controllers\RemoteVerificationController;
 use App\Http\Controllers\RemoteVerificationReviewController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RegionController;
 
 Route::get('/', function () {
     return view('auth.login');
@@ -56,6 +57,10 @@ Route::middleware(['auth', 'permission:manage_candidate'])->group(function () {
     Route::get('/elections/{election}/candidates/{candidate}/edit', [CandidateController::class, 'edit'])->name('candidates.edit');
     Route::put('/elections/{election}/candidates/{candidate}', [CandidateController::class, 'update'])->name('candidates.update');
     Route::delete('/elections/{election}/candidates/{candidate}', [CandidateController::class, 'destroy'])->name('candidates.destroy');
+});
+
+Route::middleware(['auth', 'permission:manage_region'])->group(function () {
+    Route::resource('regions', RegionController::class)->except(['show']);
 });
 
 Route::middleware(['auth', 'permission:manage_voter|view_voter'])->group(function () {
