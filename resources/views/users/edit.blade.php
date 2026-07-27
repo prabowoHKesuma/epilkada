@@ -43,7 +43,7 @@
                                 @error('password') <span class="error invalid-feedback">{{ $message }}</span> @enderror
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group" {{ !$user->hasRole('superadmin') ? 'hidden' : '' }}>
                                 <label for="organization_id">Organisasi</label>
                                 <select name="organization_id" id="organization_id" class="form-control @error('organization_id') is-invalid @enderror">
                                     @foreach ($organizations as $org)
@@ -56,11 +56,11 @@
                             <div class="form-group">
                                 <label for="region_id">Wilayah Penugasan</label>
                                 <select name="region_id" id="region_id" class="form-control @error('region_id') is-invalid @enderror">
-                                    @foreach ($regions as $region)
+                                    {{-- @foreach ($regions as $region)
                                         <option value="{{ $region->id }}" @selected(old('region_id', $user->region_id) == $region->id)>
                                             {{ str_repeat('— ', $region->level == 'rt' ? 2 : ($region->level == 'rw' ? 1 : 0)) }}{{ $region->name }} ({{ $region->level }})
                                         </option>
-                                    @endforeach
+                                    @endforeach --}}
                                 </select>
                                 @error('region_id') <span class="error invalid-feedback">{{ $message }}</span> @enderror
                             </div>
@@ -90,4 +90,52 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // Ambil data wilayah berformat JSON dari Controller
+    const allRegions = @json($regions);
+    const orgSelect = document.getElementById('organization_id');
+    const regionSelect = document.getElementById('region_id');
+    const oldRegionId = "{{ old('region_id', $user->region_id) }}";
+
+    function updateRegions() {
+        const selectedOrg = orgSelect.value;
+        
+        // Kosongkan selalu opsi wilayah sebelum memuat yang baru
+        regionSelect.innerHTML = '<option value="">-- Pilih Wilayah --</option>';
+
+        // Jika organisasi belum dipilih, hentikan fungsi (wilayah tetap kosong)
+        if (!selectedOrg) return;
+
+        // Saring wilayah yang organization_id-nya sama dengan yang dipilih user
+        const filteredRegions = allRegions.filter(r => r.organization_id == selectedOrg);
+        
+        filteredRegions.forEach(r => {
+            const option = document.createElement('option');
+            option.value = r.id;
+            
+            // Tambahkan indentasi visual berdasarkan level
+            let prefix = '';
+            if(r.level === 'rt') prefix = '— — ';
+            else if(r.level === 'rw') prefix = '— ';
+            
+            option.textContent = prefix + r.name + ' (' + r.level.toUpperCase() + ')';
+            
+            // Pilih kembali opsi sebelumnya jika terjadi error validasi
+            if (r.id == oldRegionId) {
+                option.selected = true;
+            }
+            
+            regionSelect.appendChild(option);
+        });
+    }
+
+    // Dengarkan setiap perubahan klik pada kotak Organisasi
+    orgSelect.addEventListener('change', updateRegions);
+    
+    // Jalankan satu kali saat halaman pertama kali dimuat
+    updateRegions();
+</script>
+@endpush
 @endsection

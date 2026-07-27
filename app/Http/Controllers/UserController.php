@@ -37,12 +37,29 @@ class UserController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
-        $organizations = Organization::all();
-        $regions = Region::all();
+        $user = $request->user();
         $roles = Role::all();
-        return view('users.create', compact('organizations', 'regions', 'roles'));
+
+        // Data Scoping: Menyaring Organisasi dan Wilayah berdasarkan Role
+        if ($user->hasRole('superadmin')) {
+            $organizations = Organization::where('is_active', true)->get();
+            $regions = Region::orderBy('level')->orderBy('name')->get(['id', 'organization_id', 'name', 'level']);
+        } else {
+            // Admin Kelurahan hanya melihat organisasinya dan wilayah di bawahnya
+            $organizations = Organization::where('id', $user->organization_id)->get();
+            $regions = Region::where('organization_id', $user->organization_id)
+                ->where(function($q) use ($user) {
+                    $q->where('id', $user->region_id)
+                      ->orWhere('parent_id', $user->region_id)
+                      ->orWhereIn('parent_id', function($subQuery) use ($user) {
+                          $subQuery->select('id')->from('regions')->where('parent_id', $user->region_id);
+                      });
+                })->orderBy('level')->orderBy('name')->get(['id', 'organization_id', 'name', 'level']);
+        }
+
+        return view('users.create', compact('organizations', 'regions', 'roles', 'user'));
     }
 
     /**
@@ -77,12 +94,28 @@ class UserController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(User $user)
+    public function edit(Request $request, User $user)
     {
-        $organizations = Organization::all();
-        $regions = Region::all();
+        $authUser = $request->user(); // Yang sedang login
         $roles = Role::all();
-        return view('users.edit', compact('user', 'organizations', 'regions', 'roles'));
+
+        // Data Scoping identik dengan fungsi create
+        if ($authUser->hasRole('superadmin')) {
+            $organizations = Organization::where('is_active', true)->get();
+            $regions = Region::orderBy('level')->orderBy('name')->get(['id', 'organization_id', 'name', 'level']);
+        } else {
+            $organizations = Organization::where('id', $authUser->organization_id)->get();
+            $regions = Region::where('organization_id', $authUser->organization_id)
+                ->where(function($q) use ($authUser) {
+                    $q->where('id', $authUser->region_id)
+                      ->orWhere('parent_id', $authUser->region_id)
+                      ->orWhereIn('parent_id', function($subQuery) use ($authUser) {
+                          $subQuery->select('id')->from('regions')->where('parent_id', $authUser->region_id);
+                      });
+                })->orderBy('level')->orderBy('name')->get(['id', 'organization_id', 'name', 'level']);
+        }
+
+        return view('users.edit', compact('user', 'organizations', 'regions', 'roles', 'authUser'));
     }
 
     /**
