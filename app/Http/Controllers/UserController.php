@@ -45,9 +45,9 @@ class UserController extends Controller
         // Data Scoping: Menyaring Organisasi dan Wilayah berdasarkan Role
         if ($user->hasRole('superadmin')) {
             $organizations = Organization::where('is_active', true)->get();
-            $regions = Region::orderBy('level')->orderBy('name')->get(['id', 'organization_id', 'name', 'level']);
+            // PERBAIKAN: Hapus orderBy('level') dan tambahkan 'parent_id'
+            $regions = Region::orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']);
         } else {
-            // Admin Kelurahan hanya melihat organisasinya dan wilayah di bawahnya
             $organizations = Organization::where('id', $user->organization_id)->get();
             $regions = Region::where('organization_id', $user->organization_id)
                 ->where(function($q) use ($user) {
@@ -56,7 +56,7 @@ class UserController extends Controller
                       ->orWhereIn('parent_id', function($subQuery) use ($user) {
                           $subQuery->select('id')->from('regions')->where('parent_id', $user->region_id);
                       });
-                })->orderBy('level')->orderBy('name')->get(['id', 'organization_id', 'name', 'level']);
+                })->orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']); // Tambahkan parent_id
         }
 
         return view('users.create', compact('organizations', 'regions', 'roles', 'user'));
@@ -100,19 +100,20 @@ class UserController extends Controller
         $roles = Role::all();
 
         // Data Scoping identik dengan fungsi create
-        if ($authUser->hasRole('superadmin')) {
+        if ($user->hasRole('superadmin')) {
             $organizations = Organization::where('is_active', true)->get();
-            $regions = Region::orderBy('level')->orderBy('name')->get(['id', 'organization_id', 'name', 'level']);
+            // PERBAIKAN: Hapus orderBy('level') dan tambahkan 'parent_id'
+            $regions = Region::orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']);
         } else {
-            $organizations = Organization::where('id', $authUser->organization_id)->get();
-            $regions = Region::where('organization_id', $authUser->organization_id)
-                ->where(function($q) use ($authUser) {
-                    $q->where('id', $authUser->region_id)
-                      ->orWhere('parent_id', $authUser->region_id)
-                      ->orWhereIn('parent_id', function($subQuery) use ($authUser) {
-                          $subQuery->select('id')->from('regions')->where('parent_id', $authUser->region_id);
+            $organizations = Organization::where('id', $user->organization_id)->get();
+            $regions = Region::where('organization_id', $user->organization_id)
+                ->where(function($q) use ($user) {
+                    $q->where('id', $user->region_id)
+                      ->orWhere('parent_id', $user->region_id)
+                      ->orWhereIn('parent_id', function($subQuery) use ($user) {
+                          $subQuery->select('id')->from('regions')->where('parent_id', $user->region_id);
                       });
-                })->orderBy('level')->orderBy('name')->get(['id', 'organization_id', 'name', 'level']);
+                })->orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']); // Tambahkan parent_id
         }
 
         return view('users.edit', compact('user', 'organizations', 'regions', 'roles', 'authUser'));

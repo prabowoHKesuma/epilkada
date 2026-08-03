@@ -102,44 +102,58 @@
     const allRegions = @json($regions);
     const orgSelect = document.getElementById('organization_id');
     const regionSelect = document.getElementById('region_id');
-    const oldRegionId = "{{ old('region_id') }}"; // Menjaga pilihan saat validasi gagal
+    const oldRegionId = "{{ old('region_id') }}"; 
 
     function updateRegions() {
         const selectedOrg = orgSelect.value;
-        
-        // Kosongkan selalu opsi wilayah sebelum memuat yang baru
         regionSelect.innerHTML = '<option value="">-- Pilih Wilayah --</option>';
-
-        // Jika organisasi belum dipilih, hentikan fungsi (wilayah tetap kosong)
         if (!selectedOrg) return;
 
-        // Saring wilayah yang organization_id-nya sama dengan yang dipilih user
+        // 1. Saring wilayah sesuai Organisasi
         const filteredRegions = allRegions.filter(r => r.organization_id == selectedOrg);
-        
-        filteredRegions.forEach(r => {
+        const filteredRegionIds = filteredRegions.map(r => r.id);
+
+        // 2. Cari Akar Wilayah (Root Nodes) 
+        // Root adalah wilayah yang parent_id-nya tidak ada di dalam list filteredRegions (Bisa Kelurahan, atau RW jika admin RW yg login)
+        const rootNodes = filteredRegions.filter(r => !filteredRegionIds.includes(r.parent_id));
+
+        // 3. Fungsi Rekursif untuk mencetak anak-anak ke bawah
+        function appendChildren(parentId, indent) {
+            // Cari wilayah yang parent_id-nya sama dengan ID saat ini
+            const children = filteredRegions.filter(r => r.parent_id == parentId);
+            
+            children.forEach(child => {
+                const option = document.createElement('option');
+                option.value = child.id;
+                option.textContent = indent + child.name + ' (' + child.level.toUpperCase() + ')';
+                
+                if (child.id == oldRegionId) option.selected = true;
+                
+                regionSelect.appendChild(option);
+
+                // Ulangi fungsi ini untuk mencari anak dari anak ini (RT)
+                appendChildren(child.id, indent + '— ');
+            });
+        }
+
+        // 4. Cetak mulai dari Root Nodes (Induk Teratas)
+        rootNodes.forEach(root => {
             const option = document.createElement('option');
-            option.value = r.id;
+            option.value = root.id;
             
-            // Tambahkan indentasi visual berdasarkan level
-            let prefix = '';
-            if(r.level === 'rt') prefix = '— — ';
-            else if(r.level === 'rw') prefix = '— ';
+            // Induk teratas tidak butuh garis indentasi
+            option.textContent = root.name + ' (' + root.level.toUpperCase() + ')';
             
-            option.textContent = prefix + r.name + ' (' + r.level.toUpperCase() + ')';
-            
-            // Pilih kembali opsi sebelumnya jika terjadi error validasi
-            if (r.id == oldRegionId) {
-                option.selected = true;
-            }
+            if (root.id == oldRegionId) option.selected = true;
             
             regionSelect.appendChild(option);
+
+            // Cetak anak-anaknya
+            appendChildren(root.id, '— ');
         });
     }
 
-    // Dengarkan setiap perubahan klik pada kotak Organisasi
     orgSelect.addEventListener('change', updateRegions);
-    
-    // Jalankan satu kali saat halaman pertama kali dimuat
     updateRegions();
 </script>
 @endpush
