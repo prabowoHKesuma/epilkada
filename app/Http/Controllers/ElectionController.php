@@ -7,6 +7,8 @@ use App\Models\Election;
 use App\Http\Requests\StoreElectionRequest;
 use App\Http\Requests\UpdateElectionRequest;
 use App\Services\AuditLogger;
+use App\Models\Organization;
+use App\Models\Region;
 
 class ElectionController extends Controller
 {
@@ -19,9 +21,27 @@ class ElectionController extends Controller
         return view('elections.index', compact('elections'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('elections.create');
+        $user = $request->user();
+
+        // Logika scoping persis seperti UserController
+        if ($user->hasRole('superadmin')) {
+            $organizations = Organization::where('is_active', true)->get();
+            $regions = Region::orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']);
+        } else {
+            $organizations = Organization::where('id', $user->organization_id)->get();
+            $regions = Region::where('organization_id', $user->organization_id)
+                ->where(function($q) use ($user) {
+                    $q->where('id', $user->region_id)
+                      ->orWhere('parent_id', $user->region_id)
+                      ->orWhereIn('parent_id', function($subQuery) use ($user) {
+                          $subQuery->select('id')->from('regions')->where('parent_id', $user->region_id);
+                      });
+                })->orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']);
+        }
+
+        return view('elections.create', compact('organizations', 'regions', 'user'));
     }
 
     /**
@@ -32,8 +52,9 @@ class ElectionController extends Controller
         $validated = $request->validated();
 
         Election::create([
-            'organization_id' => auth()->user()->organization_id,
-            'region_id' => auth()->user()->region_id,
+            // AMBIL DARI FORM VALIDATED, BUKAN DARI AUTH USER (Kecuali created_by)
+            'organization_id' => $validated['organization_id'],
+            'region_id' => $validated['region_id'],
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'status' => 'draft',
@@ -54,10 +75,27 @@ class ElectionController extends Controller
         return view('elections.show', compact('election'));
     }
 
-    public function edit(Election $election)
+    public function edit(Request $request, Election $election)
     {
         $this->ensureEditable($election);
-        return view('elections.edit', compact('election'));
+        $authUser = $request->user();
+
+        if ($authUser->hasRole('superadmin')) {
+            $organizations = Organization::where('is_active', true)->get();
+            $regions = Region::orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']);
+        } else {
+            $organizations = Organization::where('id', $authUser->organization_id)->get();
+            $regions = Region::where('organization_id', $authUser->organization_id)
+                ->where(function($q) use ($authUser) {
+                    $q->where('id', $authUser->region_id)
+                      ->orWhere('parent_id', $authUser->region_id)
+                      ->orWhereIn('parent_id', function($subQuery) use ($authUser) {
+                          $subQuery->select('id')->from('regions')->where('parent_id', $authUser->region_id);
+                      });
+                })->orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']);
+        }
+
+        return view('elections.edit', compact('election', 'organizations', 'regions', 'authUser'));
     }
 
     /**

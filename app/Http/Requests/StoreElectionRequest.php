@@ -23,7 +23,9 @@ class StoreElectionRequest extends FormRequest
     public function rules(): array
     {
        return [
-            'title' => ['required', 'string', 'max:150'],
+        'organization_id' => ['required', 'exists:organizations,id'],
+        'region_id' => ['required', 'exists:regions,id'],
+            'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'start_at' => ['required', 'date'],
             'end_at' => ['required', 'date', 'after:start_at'],

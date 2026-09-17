@@ -28,6 +28,7 @@ class StoreVoterRequest extends FormRequest
             'kk' => ['required', 'digits:16'],
             'address' => ['nullable', 'string'],
             'phone' => ['nullable', 'string', 'max:30'],
+            'organization_id' => ['required', 'exists:organizations,id'],
             'region_id' => ['required', 'exists:regions,id'],
             'rt' => ['nullable', 'string', 'max:10'],
             'rw' => ['nullable', 'string', 'max:10'],

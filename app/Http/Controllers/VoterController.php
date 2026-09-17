@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Voter;
 use App\Models\Region;
+use App\Models\Organization;
 use App\Http\Requests\StoreVoterRequest;
 use App\Services\PiiHasher;
 use Illuminate\Validation\ValidationException;
@@ -25,12 +26,26 @@ class VoterController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
-        // Panggil fungsi helper untuk mendapatkan region sesuai hak akses user
-        $regions = $this->getAllowedRegions();
+        $user = $request->user();
+
+        if ($user->hasRole('superadmin')) {
+            $organizations = Organization::where('is_active', true)->get();
+            $regions = Region::orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']);
+        } else {
+            $organizations = Organization::where('id', $user->organization_id)->get();
+            $regions = Region::where('organization_id', $user->organization_id)
+                ->where(function($q) use ($user) {
+                    $q->where('id', $user->region_id)
+                      ->orWhere('parent_id', $user->region_id)
+                      ->orWhereIn('parent_id', function($subQuery) use ($user) {
+                          $subQuery->select('id')->from('regions')->where('parent_id', $user->region_id);
+                      });
+                })->orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']);
+        }
         
-        return view('voters.create', compact('regions'));
+        return view('voters.create', compact('organizations', 'regions', 'user'));
     }
 
     public function store(StoreVoterRequest $request)
@@ -47,7 +62,7 @@ class VoterController extends Controller
 
         $voter = Voter::create([
             'voter_code' => 'PMH-'.strtoupper(uniqid()),
-            'organization_id' => auth()->user()->organization_id,
+            'organization_id' => $validated['organization_id'], // PERBAIKAN: Ambil dari form, bukan auth()->user()
             'region_id' => $validated['region_id'],
             'name' => $validated['name'],
             'nik_hash' => $nikHash,
@@ -73,12 +88,26 @@ class VoterController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Voter $voter)
+    public function edit(Request $request, Voter $voter)
     {
-        // Panggil fungsi helper untuk mendapatkan region sesuai hak akses user
-        $regions = $this->getAllowedRegions();
+        $authUser = $request->user();
+
+        if ($authUser->hasRole('superadmin')) {
+            $organizations = Organization::where('is_active', true)->get();
+            $regions = Region::orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']);
+        } else {
+            $organizations = Organization::where('id', $authUser->organization_id)->get();
+            $regions = Region::where('organization_id', $authUser->organization_id)
+                ->where(function($q) use ($authUser) {
+                    $q->where('id', $authUser->region_id)
+                      ->orWhere('parent_id', $authUser->region_id)
+                      ->orWhereIn('parent_id', function($subQuery) use ($authUser) {
+                          $subQuery->select('id')->from('regions')->where('parent_id', $authUser->region_id);
+                      });
+                })->orderBy('name')->get(['id', 'organization_id', 'parent_id', 'name', 'level']);
+        }
         
-        return view('voters.edit', compact('voter', 'regions'));
+        return view('voters.edit', compact('voter', 'organizations', 'regions', 'authUser'));
     }
 
     public function update(StoreVoterRequest $request, Voter $voter)
@@ -94,12 +123,13 @@ class VoterController extends Controller
         }
 
         $voter->update([
+            'organization_id' => $validated['organization_id'], // PERBAIKAN BILA DIEDIT
+            'region_id' => $validated['region_id'],
             'name' => $validated['name'],
             'nik_hash' => $nikHash,
             'kk_hash' => PiiHasher::hash($validated['kk']),
             'address' => $validated['address'] ?? null,
             'phone' => $validated['phone'] ?? null,
-            'region_id' => $validated['region_id'],
             'rt' => $validated['rt'] ?? null,
             'rw' => $validated['rw'] ?? null,
         ]);
