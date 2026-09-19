@@ -16,6 +16,7 @@
             cursor: pointer;
             border-radius: 12px;
             overflow: hidden;
+            background: #fff;
         }
         .candidate-card:hover { 
             border-color: #007bff; 
@@ -27,7 +28,23 @@
             background-color: #f8fff9; 
             box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.25) !important;
         }
-        .candidate-img { height: 280px; object-fit: cover; width: 100%; }
+        
+        /* PERBAIKAN PROPORSI FOTO (RASIO 3:4) */
+        .candidate-img-wrapper {
+            width: 100%;
+            aspect-ratio: 3 / 4; /* Memaksa proporsi pas foto KTP */
+            overflow: hidden;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .candidate-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            object-position: top center; /* Fokus selalu pada kepala & bahu */
+        }
         .badge-number { font-size: 1.25rem; px-3; py-2; }
     </style>
 </head>
@@ -72,27 +89,34 @@
                                 
                                 <input type="radio" name="candidate_id" value="{{ $candidate->id }}" class="d-none" required>
                                 
-                                <div class="position-relative">
-                                    <span class="badge badge-primary position-absolute font-weight-bold shadow" style="top: 15px; left: 15px; font-size: 1.1rem; padding: 8px 15px; border-radius: 20px;">
+                                <div class="position-relative candidate-img-wrapper">
+                                    <span class="badge badge-primary position-absolute font-weight-bold shadow" style="top: 15px; left: 15px; font-size: 1.1rem; padding: 8px 15px; border-radius: 20px; z-index: 10;">
                                         No. {{ $candidate->number_order }}
                                     </span>
 
                                     @if($candidate->photo)
                                         <img src="{{ Storage::url($candidate->photo) }}" class="candidate-img" alt="{{ $candidate->name }}">
                                     @else
-                                        <div class="bg-light d-flex align-items-center justify-content-center candidate-img">
-                                            <i class="fas fa-user-tie fa-6x text-secondary"></i>
-                                        </div>
+                                        <i class="fas fa-user-tie fa-6x text-secondary"></i>
                                     @endif
                                 </div>
-                                
-                                <div class="card-body text-center d-flex flex-column justify-content-center p-4">
-                                    <h4 class="card-title w-100 font-weight-bold text-dark mb-1">{{ $candidate->name }}</h4>
-                                    <p class="text-muted text-sm mb-0">Klik untuk memilih kandidat ini</p>
-                                </div>
 
+                                <div class="card-body text-center d-flex flex-column justify-content-center p-3">
+                                    <h4 class="card-title w-100 font-weight-bold text-dark mb-2">{{ $candidate->name }}</h4>
+                                    
+                                    {{-- TOMBOL VISI MISI BARU (TRIGGER MANUAL) --}}
+                                    <button type="button" class="btn btn-sm btn-outline-info mx-auto mb-3" 
+                                            onclick="event.stopPropagation(); $('#modalVisiMisi{{ $candidate->id }}').modal('show');">
+                                        <i class="fas fa-book-open mr-1"></i> Baca Visi & Misi
+                                    </button>
+
+                                    <p class="text-muted text-sm mb-0">Klik area foto untuk memilih kandidat ini</p>
+                                </div>
+                                
                                 <div class="card-footer bg-transparent text-center border-top-0 pb-3 pt-0 selected-indicator d-none">
-                                    <span class="badge badge-success px-3 py-1"><i class="fas fa-check-circle mr-1"></i> DIPILIH</span>
+                                    <span class="badge badge-success px-3 py-2 text-sm" style="border-radius: 20px;">
+                                        <i class="fas fa-check-circle mr-1"></i> DIPILIH
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -117,6 +141,42 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Modal Visi Misi (Generate for each candidate) -->
+                @foreach($election->candidates as $candidate)
+                <div class="modal fade" id="modalVisiMisi{{ $candidate->id }}" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+                    <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+                        <div class="modal-content" style="border-radius: 12px; overflow: hidden;">
+                            <div class="modal-header bg-info text-white border-0">
+                                <h5 class="modal-title font-weight-bold">
+                                    <i class="fas fa-bullhorn mr-2"></i> Visi & Misi Kandidat No. {{ $candidate->number_order }}
+                                </h5>
+                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body p-4" style="text-align: left;">
+                                <div class="text-center mb-4">
+                                    <h4 class="font-weight-bold">{{ $candidate->name }}</h4>
+                                </div>
+                                
+                                <h6 class="font-weight-bold text-info"><i class="fas fa-eye mr-1"></i> VISI</h6>
+                                <p class="mb-4 text-justify">
+                                    {{ $candidate->vision ?? 'Belum ada visi yang dicantumkan oleh kandidat ini.' }}
+                                </p>
+                                
+                                <h6 class="font-weight-bold text-info"><i class="fas fa-bullseye mr-1"></i> MISI</h6>
+                                <div class="text-justify">
+                                    {!! nl2br(e($candidate->mission ?? 'Belum ada misi yang dicantumkan oleh kandidat ini.')) !!}
+                                </div>
+                            </div>
+                            <div class="modal-footer bg-light border-0">
+                                <button type="button" class="btn btn-secondary font-weight-bold px-4" data-dismiss="modal">Tutup</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
             </form>
 
         </div>

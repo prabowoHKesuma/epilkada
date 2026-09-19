@@ -17,10 +17,25 @@ class VoterController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $voters = Voter::with('region')->paginate(20);
-        return view('voters.index', compact('voters'));
+        // Ambil query pencarian dari URL (?search=nama_orang)
+        $search = $request->input('search');
+
+        $query = Voter::with('region');
+
+        // Jika ada input pencarian, filter berdasarkan nama atau kode pemilih
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('voter_code', 'like', "%{$search}%");
+            });
+        }
+
+        // Jangan lupa tambahkan appends(['search']) agar saat ganti halaman, search-nya tidak hilang
+        $voters = $query->paginate(20)->appends(['search' => $search]);
+        
+        return view('voters.index', compact('voters', 'search'));
     }
 
     /**

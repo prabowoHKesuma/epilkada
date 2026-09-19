@@ -8,6 +8,7 @@ use Illuminate\Auth\Events\Failed;
 use Illuminate\Support\Facades\Event;
 use App\Services\AuditLogger;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Paginator::useBootstrapFour();
+        
         Gate::before(function ($user, $ability) {
             return $user->hasRole('superadmin') ? true : null;
         });

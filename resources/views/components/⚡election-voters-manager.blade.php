@@ -12,10 +12,22 @@ new class extends Component
     public $searchAssigned = '';
     public $selectedVoters = [];
     public $channelChoices = []; // default pilihan channel saat daftarkan
+    public $selectAll = false;
+    public $globalChannel = '';
 
     public function mount($election)
     {
         $this->election = $election;
+    }
+
+    private function getAvailableVotersList()
+    {
+        $assignedIds = ElectionVoter::where('election_id', $this->election->id)->pluck('voter_id');
+
+        return Voter::where('is_active', true)
+            ->whereNotIn('id', $assignedIds)
+            ->where('name', 'like', '%'.$this->searchAvailable.'%')
+            ->get();
     }
 
     public function registerVoters()
@@ -68,6 +80,8 @@ new class extends Component
 
     public function render()
     {
+        $availableVoters = $this->getAvailableVotersList();
+
         $assignedIds = ElectionVoter::where('election_id', $this->election->id)->pluck('voter_id');
 
         $availableVoters = Voter::where('is_active', true)
@@ -83,6 +97,35 @@ new class extends Component
             ->get();
 
         return view('livewire.election-voters-manager', compact('availableVoters', 'assignedVoters'));
+    }
+
+    public function updatedSelectAll($value)
+    {
+        if ($value) {
+            // Panggil fungsi helper agar tidak error "undefined property"
+            $voters = $this->getAvailableVotersList();
+            
+            // Masukkan semua ID pemilih ke array selectedVoters
+            $this->selectedVoters = $voters->pluck('id')->map(fn($id) => (string) $id)->toArray();
+            
+            if ($this->globalChannel) {
+                foreach ($this->selectedVoters as $id) {
+                    $this->channelChoices[$id] = $this->globalChannel;
+                }
+            }
+        } else {
+            $this->selectedVoters = [];
+            $this->channelChoices = []; // Kosongkan juga pilihan radionya
+        }
+    }
+
+    public function updatedGlobalChannel($value)
+    {
+        if ($value && !empty($this->selectedVoters)) {
+            foreach ($this->selectedVoters as $id) {
+                $this->channelChoices[$id] = $value;
+            }
+        }
     }
 };
 ?>

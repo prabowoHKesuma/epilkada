@@ -5,7 +5,7 @@
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0">Import Pemilih dari CSV</h1>
+                <h1 class="m-0">Import Pemilih dari Excel</h1>
             </div>
         </div>
     </div>
@@ -28,7 +28,7 @@
                     <div class="alert alert-warning alert-dismissible">
                         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                         <h5><i class="icon fas fa-exclamation-triangle"></i> Catatan Baris yang Dilewati:</h5>
-                        <ul class="mb-0 list-unstyled">
+                        <ul class="mb-0 list-unstyled" style="max-height: 200px; overflow-y: auto;">
                             @foreach (session('import_errors') as $err)
                                 <li><i class="fas fa-chevron-right text-xs"></i> {{ $err }}</li>
                             @endforeach
@@ -38,7 +38,7 @@
 
                 <div class="card card-success card-outline">
                     <div class="card-header">
-                        <h3 class="card-title">Petunjuk & Upload File CSV</h3>
+                        <h3 class="card-title">Petunjuk & Upload File Excel</h3>
                     </div>
                     
                     <form action="{{ route('voters.import.process') }}" method="POST" enctype="multipart/form-data">
@@ -46,20 +46,25 @@
                         <div class="card-body">
                             
                             <div class="callout callout-warning bg-light">
-                                <h5>Format Kolom CSV Wajib:</h5>
-                                <p class="mb-2">Baris pertama adalah header (nama bebas), susunan urutan kolom harus mutlak seperti ini:</p>
+                                <h5>Format Kolom Excel Wajib:</h5>
+                                <p class="mb-2">Baris pertama adalah header (nama bebas), susunan urutan kolom dari A sampai F harus mutlak seperti ini:</p>
                                 <code>name, nik, kk, address, phone, region_code</code>
-                                <p class="mt-2 mb-0 text-sm text-muted">
-                                    * Catatan: <code>region_code</code> harus persis seperti kode RT/RW yang telah terdaftar (contoh: <code>RW01-RT01</code>).
+                                
+                                <hr>
+                                <h6 class="font-weight-bold text-danger"><i class="fas fa-exclamation-circle"></i> TIPS PENTING NIK & KK:</h6>
+                                <p class="mb-2 text-sm">Pastikan Anda mengubah format kolom NIK dan KK di Microsoft Excel menjadi <strong>"Text"</strong> sebelum mengetik angka. Jika menggunakan format General/Number, angka 16 digit akan otomatis rusak menjadi (misal: <code>3.52E+15</code>) dan akan ditolak oleh sistem.</p>
+                                
+                                <p class="mt-3 mb-0 text-sm text-muted">
+                                    * Catatan: Kolom <code>region_code</code> harus persis seperti kode RT/RW yang telah terdaftar (contoh: <code>RW01-RT01</code>).
                                 </p>
                             </div>
 
                             <div class="form-group mt-4">
-                                <label for="csv_file">Pilih File CSV Pemilih</label>
+                                <label for="excel_file">Pilih File Excel (.xls / .xlsx)</label>
                                 <div class="input-group">
                                     <div class="custom-file">
-                                        <input type="file" name="file" accept=".csv" class="custom-file-input" id="csv_file" required>
-                                        <label class="custom-file-label" for="csv_file">Pilih file .csv ...</label>
+                                        <input type="file" name="file" accept=".xlsx, .xls" class="custom-file-input" id="excel_file" required>
+                                        <label class="custom-file-label" for="excel_file">Pilih file Excel ...</label>
                                     </div>
                                 </div>
                             </div>

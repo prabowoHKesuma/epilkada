@@ -16,12 +16,30 @@
                         <input type="text" wire:model.live.debounce.300ms="searchAvailable" class="form-control form-control-sm" placeholder="Cari nama pemilih...">
                     </div>
                     
+                    {{-- BLOK AKSI MASSAL BARU --}}
+                    <div class="d-flex align-items-center justify-content-between p-2 bg-light border-bottom">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="selectAll" wire:model.live="selectAll">
+                            <label class="custom-control-label font-weight-bold" for="selectAll">Pilih Semua</label>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="mr-2 text-sm text-muted">Set Massal:</span>
+                            <select wire:model.live="globalChannel" class="form-control form-control-sm" style="width: auto;">
+                                <option value="">-- Pilih --</option>
+                                <option value="both">Keduanya</option>
+                                <option value="tps">TPS Saja</option>
+                                <option value="remote">Remote Saja</option>
+                            </select>
+                        </div>
+                    </div>
+                    {{-- AKHIR BLOK AKSI MASSAL --}}
+                    
                     <div style="max-height: 350px; overflow-y: auto;">
                         <div class="list-group list-group-flush">
                             @foreach ($availableVoters as $voter)
                                 <div class="list-group-item py-2 px-3">
                                     <div class="custom-control custom-checkbox mb-1">
-                                        <input class="custom-control-input" type="checkbox" wire:model="selectedVoters" id="voter_{{ $voter->id }}" value="{{ $voter->id }}">
+                                        <input class="custom-control-input" type="checkbox" wire:model.live="selectedVoters" id="voter_{{ $voter->id }}" value="{{ $voter->id }}">
                                         <label class="custom-control-label font-weight-normal" for="voter_{{ $voter->id }}">
                                             <strong>{{ $voter->name }}</strong> 
                                             <span class="text-muted d-block text-sm">Kode: <code>{{ $voter->voter_code }}</code></span>
@@ -38,8 +56,8 @@
                     </div>
                 </div>
                 <div class="card-footer">
-                    <button wire:click="registerVoters" class="btn btn-primary btn-block" >
-                        <i class="fas fa-user-check"></i> Masukkan Pemilih yang Dicentang
+                    <button wire:click="registerVoters" class="btn btn-primary btn-block" @if(empty($selectedVoters)) disabled @endif>
+                        <i class="fas fa-user-check"></i> Masukkan {{ count($selectedVoters) }} Pemilih yang Dicentang
                     </button>
                 </div>
             </div>

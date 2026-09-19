@@ -33,7 +33,7 @@
                             </div>
 
                             {{-- Sisipkan Input Ini di Dalam Form (Diatas form title) --}}
-                            <div class="form-group" {{ !$user->hasRole('superadmin') ? 'hidden' : '' }}>
+                            <div class="form-group" {{ !$authUser->hasRole('superadmin') ? 'hidden' : '' }}>
                                 <label for="organization_id">Organisasi</label>
                                 <select name="organization_id" id="organization_id" class="form-control @error('organization_id') is-invalid @enderror">
                                     <option value="">-- Pilih Organisasi --</option>
